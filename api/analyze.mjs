@@ -1,25 +1,27 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
+  // 強制設定 JSON 回傳格式
   res.setHeader('Content-Type', 'application/json');
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ status: 'error', message: '僅支援 POST' });
+  }
 
   const { inputData } = req.body;
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  // 這裡確保 GAS URL 只有一個且正確
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwQ7ZM8VAKFVRoOU-l2wrTLwUn5cF1Z7Vwl-6aZe73gxrKlyW8M77iBDMymQMSB3QEVKA/exec"; 
 
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     
-    // 💥 回到 v1beta，因為這是你的 Key 目前能通的路徑
-    // 💡 改用 gemini-1.5-flash，因為它的免費配額通常比 2.0 寬裕
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-1.5-flash" } // 不手動指定版本，讓 SDK 預設走 v1beta
-    );
+    // 💡 為什麼選這個？因為之前的紀錄顯示您的 Key 只有這條路是通的 (429 比 404 好)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash" 
+    });
 
-    // 準備傳送給 AI 的內容
-    const prompt = "你是心理導師。請根據數據給予100字內暖心建議：" + JSON.stringify(inputData);
-    
+    // 準備 Prompt
+    const prompt = `你是一位心理諮商師。以下是使用者的測驗選項數據：${JSON.stringify(inputData)}。請根據這些數據計算壓力傾向，並給予 150 字內暖心且專業的建議。`;
+
     // 執行生成
     const result = await model.generateContent(prompt);
     const aiText = result.response.text();
@@ -28,13 +30,21 @@ export default async function handler(req, res) {
       status: 'success',
       aiAnalysis: aiText
     });
+
   } catch (error) {
     console.error("Gemini Error:", error.message);
-    // 💥 如果還是 429，至少讓前端知道要稍等
-    const isRateLimit = error.message.includes("429") || error.message.includes("quota");
+    
+    // 處理 429 額度問題
+    if (error.message.includes("429") || error.message.includes("quota")) {
+      return res.status(429).json({ 
+        status: 'error', 
+        message: "目前使用人數較多，請等候 1 分鐘再按一次「送出評估」。" 
+      });
+    }
+
     return res.status(500).json({ 
       status: 'error', 
-      message: isRateLimit ? "分析太頻繁了，請等 1 分鐘再試一次" : error.message 
+      message: "分析發生錯誤：" + error.message 
     });
   }
 }
