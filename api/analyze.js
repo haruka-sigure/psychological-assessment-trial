@@ -22,8 +22,8 @@ export default async function handler(req, res) {
     // 在 api/analyze.js 找到這一段
     const model = genAI.getGenerativeModel({ 
     //model: "gemini-1.5-fl// 💥 試著改為下面的其中一個：
-    // model: "gemini-1.5-flash-latest", 
-     model: "gemini-2.0-flash",// (如果 1.5 持續 404)
+    model: "gemini-1.5-flash-latest", 
+    // model: "gemini-2.0-flash",// (如果 1.5 持續 404)
     systemInstruction: "..." 
 });
 
