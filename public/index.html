@@ -1,531 +1,172 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>心理測量問卷 - 結果顯示</title>
+    <title>疾病介紹 - 響應式版本</title>
     <style>
-        /* ------------------- CSS 樣式保持不變 ------------------- */
+        :root {
+            --primary-bg: #e0f7fa;
+            --card-bg: #fdf2d9;
+            --accent-green: #7ef4ad;
+            --text-color: #333;
+            --purple-theme: #8a4af3;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f7f7f7;
-            padding: 20px;
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--primary-bg);
+            margin: 0;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            min-height: 100vh;
         }
 
         .container {
-            width: 90%;
-            max-width: 900px;
-            background-color: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .instruction {
-            margin-bottom: 30px;
-            font-size: 1.1em;
-            color: #444;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .assessment-table {
             width: 100%;
-            border-collapse: collapse;
-        }
-
-        .assessment-table th, .assessment-table td {
-            padding: 15px 10px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-        }
-
-        /* ... (省略其餘問卷 CSS) ... */
-        .submit-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin-top: 30px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .submit-btn:hover {
-            background-color: #218838;
-        }
-
-        /* ------------------- 結果區塊 (SECTION 2) ------------------- */
-        #resultSection {
-            text-align: center;
-            padding: 40px 0;
-            display: none; 
-            background-color: #f5f0f8; 
-            margin-top: 30px;
-            border-radius: 8px;
-        }
-
-        #resultSection h2 {
-            font-size: 2em;
-            margin-bottom: 40px;
-            color: #333;
-        }
-
-        .result-table {
-            width: 90%;
             max-width: 500px;
-            margin: 0 auto 30px;
-            border-collapse: collapse;
-            text-align: left;
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border-radius: 5px;
-        }
-
-        .result-table td {
-            padding: 15px;
-            font-size: 1.1em;
-            border-bottom: 1px solid #eee;
-        }
-
-        .result-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .result-table td:nth-child(2) { 
-            text-align: right;
-            font-weight: bold;
-            width: 15%;
-        }
-
-        .result-table td:nth-child(3) { 
+            padding: 40px 20px;
             text-align: center;
-            width: 30%;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 30px; line-height: 1.4; }
+
+        /* --- 手機版按鈕清單 --- */
+        .mobile-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .mobile-btn {
+            background: white;
+            border: 2px solid #fff;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
             font-weight: bold;
-        }
-
-        .low { color: #5cb85c; }
-        .medium { color: #f0ad4e; }
-        .high { color: #d9534f; }
-
-        .exit-btn {
-            padding: 12px 40px;
-            background-color: #ff8a80;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1em;
+            color: #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        /* --- 長條圖專用樣式 --- */
-        .bar-container {
-            width: 100%;
-            margin-top: 5px;
+            transition: all 0.2s;
         }
 
-        .bar-track {
-            height: 12px;
-            background-color: #e0e0e0;
-            border-radius: 6px;
-            overflow: hidden;
+        .mobile-btn:active { transform: scale(0.98); background: #f0f0f0; }
+        .mobile-btn.active { border-color: var(--purple-theme); color: var(--purple-theme); }
+
+        /* --- 介紹內容卡片 (手機版優化) --- */
+        .info-box {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: left;
             position: relative;
-            width: 100%;
+            display: none; /* 初始隱藏 */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out;
         }
 
-        .bar-fill {
-            height: 100%;
-            width: 0%; /* 由 JS 動態改變 */
-            border-radius: 6px;
-            transition: width 1s ease-in-out; /* 出現時的動畫 */
-        }
+        .info-box.show { display: block; }
 
-        /* 長條圖顏色 */
-        .bar-low { background-color: #5cb85c; }    /* 綠色 */
-        .bar-medium { background-color: #f0ad4e; } /* 橘色 */
-        .bar-high { background-color: #d9534f; }   /* 紅色 */
-
-        /* 微調表格對齊，讓圖表有空間 */
-        .result-table td {
-            vertical-align: middle;
-        }
-
-        /* 子問卷按鈕美化 */
-        .sub-assessment-btn {
-            margin: 5px;
-            padding: 10px 20px;
-            background-color: #e3f2fd;
-            border: 1px solid #90caf9;
-            border-radius: 20px;
+        .close-x {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #999;
             cursor: pointer;
-            transition: 0.3s;
         }
 
-        .sub-assessment-btn:hover:not(:disabled) {
-            background-color: #bbdefb;
+        .info-box h2 { margin-top: 0; color: var(--purple-theme); font-size: 1.2rem; }
+        .info-box p { line-height: 1.7; color: #444; margin-bottom: 0; }
+
+        /* --- 開始測驗按鈕 --- */
+        .start-btn {
+            background-color: var(--accent-green);
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 40px;
+            cursor: pointer;
         }
 
-        .sub-assessment-btn:disabled {
-            background-color: #eeeeee;
-            border-color: #bdbdbd;
-            color: #9e9e9e;
-            cursor: not-allowed;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="assessmentSection">
-        <div class="instruction">
-            「請您仔細閱讀以下問題，並根據您過去一個月內的經驗或狀態，選擇最符合您情況的選項。」
-        </div>
+    <h1>在開始之前，<br>我們來聊聊這些困擾...</h1>
 
-        <form id="assessmentForm">
-            <table class="assessment-table">
-                <thead>
-                    <tr>
-                        <th>問題</th>
-                        <th>從不 / 很少 </th>
-                        <th>偶爾 / 輕微困擾 </th>
-                        <th>經常 / 中度困擾 </th>
-                        <th>總是 / 嚴重困擾 </th>
-                    </tr>
-                </thead>
-                <tbody id="questionBody">
-                    <?!= questionHtml ?>
-                </tbody>
-            </table>
-            
-            <button type="submit" class="submit-btn" id="submitBtn">送出問卷並取得評估結果</button>
-            <p id="responseMessage" style="text-align: center; margin-top: 20px; color: #d9534f;"></p>
-        </form>
+    <div class="mobile-list">
+        <div class="mobile-btn" onclick="selectDisease(this, 'schizo')">思覺失調症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'bipolar')">躁鬱症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'depression')">憂鬱症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'autism')">自閉症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'anxiety')">焦慮症</div>
     </div>
 
-    <div id="resultSection" style="display: none;"> 
-        <h2>檢測結果</h2>
-        
-        <table class="result-table" id="resultTable">
-            <thead>
-                <tr>
-                    <th>評估維度</th>
-                    <th>分數</th>
-                    <th>評價</th>
-                </tr>
-            </thead>
-            <tbody id="resultBody">
-                </tbody>
-        </table>
-        <div id="detailButtonsContainer" style="margin-top: 30px; margin-bottom: 30px;">
-            </div>
-        
-        <button class="exit-btn" onclick="window.location.reload()">退出</button>
+    <div id="infoBox" class="info-box">
+        <span class="close-x" onclick="closeBox()">&times;</span>
+        <div id="infoDetail"></div>
     </div>
+
+    <button class="start-btn" onclick="goToSurvey()">開始測驗</button>
 </div>
 
 <script>
-    // ----------------------------------------------------------------------------------
-    // 變數設定
-    // ----------------------------------------------------------------------------------
-    // 💥 由於問卷現在由 Apps Script doGet 服務，GAS_WEB_APP_URL 必須是問卷被存取的 URL 自身 💥
-    const GAS_WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>'; // 獲取當前的 Web App URL
-    const EXPECTED_QUESTION_COUNT = '<?!= questionCount ?>'; // 從後端傳遞問卷數量
-    // ----------------------------------------------------------------------------------
-    let ALL_DETAIL_QUESTIONS = []; 
-    let MAIN_SCORES_MAP = {}; // 用於儲存主問卷各維度的原始分數
-    const assessmentSection = document.getElementById('assessmentSection');
-    const resultSection = document.getElementById('resultSection');
-    const resultBody = document.getElementById('resultBody');
-    const detailButtonsContainer = document.getElementById('detailButtonsContainer');
-    // 💥 修正點 2：將這兩個關鍵變數移到頂層宣告
-    const submitBtn = document.getElementById('submitBtn');
-    const responseMessage = document.getElementById('responseMessage');
+    const data = {
+        schizo: { title: "思覺失調症", content: "這是一種關於大腦訊息處理的慢性疾病，會影響一個人的思考、感覺與現實感的判斷。這並非「人格分裂」，透過早期篩檢與穩定治療，大腦的功能是可以被修復並重新與世界接軌的。" },
+        bipolar: { title: "躁鬱症", content: "患者會經歷情緒極端高昂（躁期）與極端低落（鬱期）的循環，這不僅僅是情緒化，而是生理與心理共同影響的結果。" },
+        depression: { title: "憂鬱症", content: "不僅是心情不好，而是一種持續的心境低落、失去興趣與動力，並可能伴隨睡眠與體重改變的生理疾病。" },
+        autism: { title: "自閉症", content: "屬於神經發展多樣性，影響社交溝通與感官處理。每個人的表現都不同，理解與支持是接軌的關鍵。" },
+        anxiety: { title: "焦慮症", content: "長期的過度擔憂與緊繃，可能伴隨心悸、手抖等生理症狀，影響日常生活與判斷力。" }
+    };
 
-    document.getElementById('assessmentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    function selectDisease(element, key) {
+        // 移除其他按鈕的啟動狀態
+        document.querySelectorAll('.mobile-btn').forEach(btn => btn.classList.remove('active'));
+        // 設定當前按鈕啟動
+        element.classList.add('active');
 
-        const form = e.target;
-        const formData = new FormData(form);
-        const data = {};
-        // 檢查目前問卷類型 (如果 submitBtn 的文字不是預設值，則為子問卷)
-        const currentSubmitText = submitBtn.textContent;
-        const isDetailAssessment = !currentSubmitText.includes('送出問卷並取得評估結果');
-        
+        // 顯示內容
+        const box = document.getElementById('infoBox');
+        const detail = document.getElementById('infoDetail');
+        detail.innerHTML = `<h2>${data[key].title}</h2><p>${data[key].content}</p>`;
+        box.classList.add('show');
 
-        // 將 FormData 轉換為 JSON 格式 (問題名稱: 分數)
-        for (let [key, value] of formData.entries()) {
-            data[key] = parseInt(value); 
-        }
-
-        // 💥 修正點 1：將主問卷的題目數量檢查放在這裡
-        if (!isDetailAssessment) {
-            // 主問卷模式下，檢查是否所有問題都已回答 (使用後端傳來的數量)
-            if (Object.keys(data).length < parseInt(EXPECTED_QUESTION_COUNT)) { 
-                responseMessage.textContent = "請確保回答了所有問題。";
-                return; 
-            }
-        }
-
-        // 如果是詳細問卷，加入類型和維度標籤
-        if (isDetailAssessment) {
-            data.assessmentType = 'detail';
-            data.dimension = currentSubmitText.replace('送出', '').replace('詳細評量', '').trim();
-            
-            // 💥 關鍵點：將主問卷分數塞進要傳送的資料中
-            data.mainScore = MAIN_SCORES_MAP[data.dimension] || 0;
-        }
-
-        // 禁用按鈕並更新狀態
-        submitBtn.disabled = true;
-        responseMessage.textContent = "資料正在傳輸與計算中，請稍候...";
-        responseMessage.style.color = '#007bff';
-        
-        // 使用 Fetch API 將數據發送到 Google Apps Script (doPost)
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({data: JSON.stringify(data)})
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`伺服器回應錯誤，狀態碼: ${response.status}`);
-            }
-            return response.json(); 
-        })
-        .then(data => {
-            if (data.status === 'success' && data.results) {
-                // 主問卷結果：顯示多維度表格和按鈕
-                displayResults(data.results, data.buttons, data.detailQuestions);
-                
-            } else if (data.status === 'detail_success') {
-                // 💥 詳細問卷結果：呼叫新函數取代主結果畫面 💥
-                // 💥 請嚴格遵守這個順序：維度, 詳評分, 評價, 滿分, 總分
-                displayDetailResult(
-                    data.dimension, 
-                    data.score, 
-                    data.evaluation, 
-                    data.maxScore, 
-                    data.totalScore
-                );
-                
-            } else {
-                // 錯誤處理
-                responseMessage.textContent = "計算失敗或數據格式錯誤：" + (data.message || "未知的錯誤");
-                responseMessage.style.color = '#d9534f';
-            }
-        })
-        .catch(error => {
-            responseMessage.textContent = `提交失敗，請檢查網路或服務腳本配置: ${error}`;
-            responseMessage.style.color = '#d9534f';
-            console.error("Fetch Error:", error);
-        })
-        .finally(() => {
-             // 提交成功後不再重新啟用按鈕，因為頁面已切換到結果區
-             if(document.getElementById('assessmentSection').style.display !== 'none'){
-                 submitBtn.disabled = false; 
-             }
-        });
-    });
-
-    /**
-     * 根據 GAS 返回的結果陣列，動態生成表格並顯示結果區塊
-     */
-    // ----------------------------------------------------------------------------------
-// 新增變數：儲存後端傳來的所有詳細題目
-// ----------------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------------
-// 💥 函數 1: 處理主問卷結果，顯示按鈕
-// ----------------------------------------------------------------------------------
-function displayResults(results, buttons, detailQuestions) {
-    ALL_DETAIL_QUESTIONS = detailQuestions; // 儲存所有詳細題目
-        
-        // 隱藏狀態訊息
-        responseMessage.style.display = 'none';
-
-        // 1. 清空舊結果
-        resultBody.innerHTML = '';
-
-        // 💥 關鍵點：紀錄主問卷分數，供後續詳細評量加總
-        results.forEach(item => {
-        MAIN_SCORES_MAP[item.dimension] = item.score; 
-        
-        let statusClass = item.evaluation.includes('高') ? 'high' : (item.evaluation.includes('中') ? 'medium' : 'low');
-        let barClass = 'bar-' + statusClass;
-        
-        // 使用後端傳來的 maxScore (來自 DimensionCriteria)
-        let maxScore = item.maxScore || 12; 
-        let percentage = Math.min((item.score / maxScore) * 100, 100);
-
-        const row = resultBody.insertRow();
-        row.insertCell().textContent = item.dimension; 
-        row.insertCell().innerHTML = `
-            <div class="bar-track"><div class="bar-fill ${barClass}" style="width: ${percentage}%"></div></div>
-            <span style="font-size: 0.85em;">${item.score} / ${maxScore} 分</span>
-        `;
-        row.insertCell().innerHTML = `<span class="${statusClass}">${item.evaluation}</span>`; 
-        });
-
-        // 2. 💥 生成動態按鈕
-        detailButtonsContainer.innerHTML = '';
-        buttons.forEach(buttonInfo => {
-            const btn = document.createElement('button');
-            btn.textContent = buttonInfo.label;
-            btn.className = 'sub-assessment-btn'; // 您可以為其定義 CSS 樣式
-            btn.onclick = () => startSubAssessment(buttonInfo.dimension); // 點擊時啟動子問卷
-            detailButtonsContainer.appendChild(btn);
-        });
-        // 💥 確保按鈕容器是可見的 💥
-        detailButtonsContainer.style.display = 'flex'; // 或 'block'
-        detailButtonsContainer.style.justifyContent = 'center';
-        detailButtonsContainer.style.flexWrap = 'wrap';
-
-        // 3. 隱藏問卷區塊，顯示結果區塊
-        assessmentSection.style.display = 'none';
-        resultSection.style.display = 'block';
-
-        // 4. 滾動到頂部
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // 自動捲動到說明文字，優化手機體驗
+        setTimeout(() => {
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
     }
-    // ----------------------------------------------------------------------------------
-// 💥 函數 2: 啟動子問卷 (核心邏輯)
-// ----------------------------------------------------------------------------------
-function startSubAssessment(dimension) {
-    // 1. 篩選出目標維度的詳細題目
-    // row[2] 是 Dimension 欄位
-    const filteredQuestions = ALL_DETAIL_QUESTIONS.filter(row => row[2] === dimension);
-    
-    if (filteredQuestions.length === 0) {
-        alert('此維度無詳細評量題目。');
-        return;
+
+    function closeBox() {
+        document.getElementById('infoBox').classList.remove('show');
+        document.querySelectorAll('.mobile-btn').forEach(btn => btn.classList.remove('active'));
     }
+function goToSurvey() {
+    const gasUrl = "https://script.google.com/macros/s/AKfycbwQ7ZM8VAKFVRoOU-l2wrTLwUn5cF1Z7Vwl-6aZe73gxrKlyW8M77iBDMymQMSB3QEVKA/exec";
+
+    const btn = document.querySelector('.start-btn');
+    btn.innerText = "測驗載入中..."; // 更改文字
+    btn.style.opacity = "0.7";       // 變淡
+    btn.disabled = true;             // 禁用按鈕防止重複點擊
+    // 如果有需要，甚至可以把使用者最後點擊的疾病資訊傳過去 (選填)
+    // const activeDisease = document.querySelector('.mobile-btn.active')?.innerText || "none";
+    // window.location.href = gasUrl + "?source=" + encodeURIComponent(activeDisease);
     
-    // 2. 將篩選後的題目轉換為 HTML
-    let subHtml = '';
-    filteredQuestions.forEach(row => {
-        const qId = row[0];            
-        const questionText = row[1];   
-        
-        // 使用與主問卷相同的 HTML 結構
-        subHtml += `
-            <tr>
-                <td>${questionText}</td>
-                <td class="radio-cell"><label><input type="radio" name="${qId}" value="0" required><span class="custom-radio"></span></label></td>
-                <td class="radio-cell"><label><input type="radio" name="${qId}" value="1"><span class="custom-radio"></span></label></td>
-                <td class="radio-cell"><label><input type="radio" name="${qId}" value="2"><span class="custom-radio"></span></label></td>
-                <td class="radio-cell"><label><input type="radio" name="${qId}" value="3"><span class="custom-radio"></span></label></td>
-            </tr>
-        `;
-    });
-    
-    // 3. 替換問卷內容
-    document.getElementById('questionBody').innerHTML = subHtml;
-    
-    // 4. 重置表單為子問卷模式
-    document.getElementById('assessmentForm').reset();
-    document.getElementById('submitBtn').textContent = `送出${dimension}詳細評量`;
-    // 💥 修正點 1：確保按鈕是啟用的 (防止上次失敗的禁用狀態殘留)
-    if (submitBtn) {
-        submitBtn.disabled = false;
-    }
-    
-    // 5. 隱藏結果區塊，顯示問卷區塊
-    resultSection.style.display = 'none';
-    assessmentSection.style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    
-}
-
-/**
- * @param {string} dimension - 維度名稱
- * @param {number} detailScore - 詳細問卷得到的「加答部分」分數
- * @param {string} evaluation - 根據總分得出的評價
- * @param {number} maxScore - 該維度的總滿分 (來自 DetailMapping)
- */
-function displayDetailResult(dimension, detailScore, evaluation, maxScore, totalScore) {
-    try {
-        const resultBody = document.getElementById('resultBody');
-        const resultHeader = document.querySelector('#resultSection h2');
-        
-        // 1. 更新標題：顯示目前分析的是哪個維度
-        if (resultHeader) resultHeader.textContent = `【${dimension}】深度分析結果`;
-        
-        // 2. 清空原本主問卷的表格內容，準備放入詳細結果
-        resultBody.innerHTML = '';
-
-        // 3. 容錯處理：確保分數與滿分為數字
-        const safeTotal = Number(totalScore) || 0;
-        const safeMax = Number(maxScore) || 100;
-        
-        // 4. 計算顏色與百分比
-        // 根據評價文字判斷等級，與主問卷一致
-        let statusClass = evaluation.includes('高') ? 'high' : (evaluation.includes('中') ? 'medium' : 'low');
-        let barClass = 'bar-' + statusClass;
-        let percentage = Math.min((safeTotal / safeMax) * 100, 100);
-
-        // 5. 建立結果行 (對應：維度 | 分數+長條圖 | 評價)
-        const row = resultBody.insertRow();
-
-        // 第一欄：維度名稱
-        row.insertCell().innerHTML = `<strong>${dimension}</strong><br><small style="color:#666;">(含初步篩檢分數)</small>`; 
-        
-        // 第二欄：長條圖與分數數值
-        row.insertCell().innerHTML = `
-            <div class="bar-container" style="display: flex; flex-direction: column; gap: 4px;">
-                <div class="bar-track" style="height: 12px; background: #eee; border-radius: 6px; overflow: hidden; width: 100%;">
-                    <div class="bar-fill ${barClass}" 
-                         style="width: ${percentage}%; height: 100%; transition: width 1s ease-out;">
-                    </div>
-                </div>
-                <div style="font-size: 0.85em; color: #333; font-weight: bold;">
-                    ${safeTotal} / ${safeMax} 分
-                </div>
-            </div>
-        `;
-
-        // 第三欄：評價文字
-        row.insertCell().innerHTML = `<span class="${statusClass}" style="font-weight: bold;">${evaluation}</span>`;
-
-        // 6. 介面切換與按鈕更新
-        document.getElementById('assessmentSection').style.display = 'none';
-        document.getElementById('resultSection').style.display = 'block';
-        
-        // 更新該維度的詳細評量按鈕，標記為「已完成」
-        markButtonAsCompleted(dimension);
-
-        // 捲動至頂部觀看結果
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    } catch (err) {
-        console.error("渲染深度分析結果出錯:", err);
-    }
-}
-/**
- * 輔助函式：將對應維度的按鈕設為已完成
- */
-function markButtonAsCompleted(dimension) {
-    const buttons = document.querySelectorAll('.sub-assessment-btn');
-    buttons.forEach(btn => {
-        // 去除按鈕文字中的空白後比對維度名稱
-        if (btn.textContent.trim().startsWith(dimension)) {
-            btn.disabled = true;
-            btn.classList.add('completed'); // 可在 CSS 增加 .completed { opacity: 0.6; cursor: not-allowed; }
-            if (!btn.textContent.includes('(已完成)')) {
-                btn.innerHTML = `${dimension}評量 <small>(已完成)</small>`;
-            }
-        }
-    });
+    window.location.href = gasUrl;
 }
 </script>
+
 </body>
 </html>
