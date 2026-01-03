@@ -29,66 +29,84 @@
 </head>
 <body>
 
-<div id="resultContainer" class="result-container" style="display:none;">
-    
-    <div class="section-box">
-        <h3>📊 評估結果摘要</h3>
-        <div id="scoreList"></div> 
-    </div>
+<div class="card" id="surveyCard">
+    <div id="loadingQuestions">載入題目中，請稍候...</div>
+    <form id="quizForm" style="display:none;">
+        <table id="questionTable">
+            </table>
+        <button type="button" onclick="handleFinalSubmit()">送出測驗</button>
+    </form>
 
-    <div id="aiAdviceBox" class="ai-report" style="display:none;">
-        <h4 style="margin-top:0; color: #8a4af3;">💡 暖心導師的建議</h4>
-        <div id="aiContent"></div>
-    </div>
+    <div id="resultContainer" style="display:none;">
+        <h3>📊 測驗評估報告</h3>
+        <div id="scoreList"></div> <hr>
+        <div id="aiAdviceBox" style="background:#fdf2d9; padding:15px; border-radius:10px; margin:15px 0;">
+            <h4 style="color:#8a4af3; margin-top:0;">💡 暖心導師的建議</h4>
+            <p id="aiContent" style="line-height:1.6;"></p>
+        </div>
+        <hr>
 
-    <div id="detailSection" class="detail-section" style="display:none;">
-        <p><strong>根據您的狀態，建議進一步完成：</strong></p>
-        <div id="detailButtons"></div>
+        <div id="detailSection" style="display:none;">
+            <p><strong>建議進一步了解：</strong></p>
+            <div id="detailButtons"></div>
+        </div>
     </div>
-
-    <button onclick="location.reload()" style="margin-top:20px; background:#ccc;">重新測驗</button>
 </div>
     
+<div class="card" id="surveyCard">
+    <div id="loadingQuestions">載入題目中，請稍候...</div>
+    <form id="quizForm" style="display:none;">
+        <table id="questionTable">
+            </table>
+        <button type="button" onclick="handleFinalSubmit()">送出測驗</button>
+    </form>
+
+    <div id="resultContainer" style="display:none;">
+        <h3>📊 測驗評估報告</h3>
+        <div id="scoreList"></div> <hr>
+        <div id="aiAdviceBox" style="background:#fdf2d9; padding:15px; border-radius:10px; margin:15px 0;">
+            <h4 style="color:#8a4af3; margin-top:0;">💡 暖心導師的建議</h4>
+            <p id="aiContent" style="line-height:1.6;"></p>
+        </div>
+        <hr>
+
+        <div id="detailSection" style="display:none;">
+            <p><strong>建議進一步了解：</strong></p>
+            <div id="detailButtons"></div>
+        </div>
+    </div>
+</div>
+
 <script>
-    async function submitToAI() {
-        const userInput = document.getElementById('userInput').value;
-        const submitBtn = document.getElementById('submitBtn');
-        const loading = document.getElementById('loading');
-        const resultContainer = document.getElementById('resultContainer');
+    // 1. 頁面載入時，先去 GAS 抓題目
+    window.onload = async () => {
+        const GAS_URL = "你的_GAS_網址"; 
+        // 建議在 GAS 的 doGet 增加一個參數，讓它回傳 JSON 題目而非 HTML
+        const response = await fetch(GAS_URL + "?action=getQuestions");
+        const questions = await response.json();
+        renderQuestions(questions);
+    };
 
-        if(!userInput) return alert("請輸入內容讓我們能協助您喔！");
+    function renderQuestions(questions) {
+        // 動態產生表格 HTML 的邏輯...
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('quizForm').style.display = 'block';
+    }
 
-        // UI 狀態切換
-        submitBtn.disabled = true;
-        loading.style.display = "block";
-        resultContainer.style.display = "none";
-
-        try {
-            // 注意：這裡發送給 Vercel API 的格式需包含 assessmentType
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    inputData: {
-                        assessmentType: 'base',
-                        content: userInput // 這裡可以根據你 GAS 的需求調整結構
-                    }
-                })
-            });
-
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                renderResults(data);
-            } else {
-                throw new Error(data.message);
-            }
-        } catch (e) {
-            alert("抱歉，分析時發生錯誤：" + e.message);
-        } finally {
-            submitBtn.disabled = false;
-            loading.style.display = "none";
-        }
+    // 2. 送出給 Vercel API 進行分析
+    async function handleFinalSubmit() {
+        // 收集答案...
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            body: JSON.stringify({ inputData: { answers } })
+        });
+        const data = await response.json();
+        
+        // 顯示結果與 AI 建議
+        document.getElementById('quizForm').style.display = 'none';
+        document.getElementById('resultContainer').style.display = 'block';
+        document.getElementById('aiContent').innerText = data.aiAnalysis;
+        // ...其餘分數渲染邏輯
     }
 
     function renderResults(data) {
