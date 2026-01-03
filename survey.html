@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理測驗問卷</title>
+    <style>
+        body { font-family: sans-serif; background: #e0f7fa; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 15px; max-width: 500px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 100px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; }
+        button { background: #7ef4ad; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #result { margin-top: 20px; text-align: left; line-height: 1.6; white-space: pre-wrap; background: #fdf2d9; padding: 15px; border-radius: 10px; display: none; }
+        .loading { display: none; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>請描述您最近的心情或困擾</h2>
+    <textarea id="userInput" placeholder="例如：我最近總覺得很焦慮，甚至不敢出門..."></textarea>
+    <br>
+    <button onclick="submitToAI()">提交並生成分析</button>
+    
+    <div id="loading" class="loading">暖心導師正在閱讀您的心聲，請稍候...</div>
+    <div id="result"></div>
+</div>
+
+<script>
+    async function submitToAI() {
+        const answers = document.getElementById('userInput').value;
+        const resultDiv = document.getElementById('result');
+        const loading = document.getElementById('loading');
+
+        if(!answers) return alert("請輸入一些內容喔！");
+
+        loading.style.display = "block";
+        resultDiv.style.display = "none";
+
+        try {
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers: answers })
+            });
+            const data = await response.json();
+            
+            loading.style.display = "none";
+            resultDiv.style.display = "block";
+            resultDiv.innerText = data.text;
+        } catch (e) {
+            alert("抱歉，連線出了點問題。");
+            loading.style.display = "none";
+        }
+    }
+</script>
+</body>
+</html>
