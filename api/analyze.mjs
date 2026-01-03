@@ -19,12 +19,18 @@ export default async function handler(req, res) {
 
     // 2. 呼叫 Gemini
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    
+    // 💥 嘗試改用 2.0 版本，這通常在 v1beta 下是支援的
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: "你是一位溫柔的心理導師，請根據測驗結果給予暖心分析。"
+      model: "gemini-2.0-flash",
+      systemInstruction: "你是一位具備心理學背景的暖心導師，請針對以下結果提供約 150 字的建議。"
     });
 
-    const aiPrompt = `分析結果如下：${JSON.stringify(gasResult.results)}，請給予建議。`;
+    const aiPrompt = `使用者數據：${JSON.stringify(gasResult.results)}`;
+    
+    // 💡 增加一個簡單的延遲（例如 1 秒），避免觸發 429
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     const result = await model.generateContent(aiPrompt);
     const aiText = result.response.text();
 
