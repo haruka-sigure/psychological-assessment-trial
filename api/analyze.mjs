@@ -24,13 +24,13 @@ export default async function handler(req, res) {
     const model = genAI.getGenerativeModel({ 
       //model: "gemini-2.0-flash",
       model: "gemini-1.5-pro",
-      systemInstruction: "你是一位具備心理學背景的暖心導師，請針對以下結果提供約 150 字的建議。"
+      systemInstruction: "你是一位心理導師。請根據數據提供 100 字內簡短溫柔的分析建議。"
     });
 
     const aiPrompt = `使用者數據：${JSON.stringify(gasResult.results)}`;
     
     // 💡 增加一個簡單的延遲（例如 1 秒），避免觸發 429
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const result = await model.generateContent(aiPrompt);
     const aiText = result.response.text();
