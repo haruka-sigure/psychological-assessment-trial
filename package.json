@@ -1,6 +1,7 @@
 {
-  "name": "gemini-mental-health-survey",
+  "name": "psychological-assessment",
   "version": "1.0.0",
+  "type": "module",  // 💥 加上這一行就解決了！
   "dependencies": {
     "@google/generative-ai": "^0.21.0"
   }
