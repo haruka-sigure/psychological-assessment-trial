@@ -22,8 +22,8 @@ export default async function handler(req, res) {
     
     // 💥 嘗試改用 2.0 版本，這通常在 v1beta 下是支援的
     const model = genAI.getGenerativeModel({ 
-      //model: "gemini-2.0-flash",
-      model:"gemini-1.5-flash",
+      { model: "gemini-1.5-flash" }, 
+      { apiVersion: 'v1' } // 💡 強制指定穩定版路徑,
       systemInstruction: "你是一位心理導師。請根據數據提供 100 字內簡短溫柔的分析建議。"
     });
 
