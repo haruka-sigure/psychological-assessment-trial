@@ -100,6 +100,41 @@
             loadingDiv.innerHTML = `<p style="color:red;">載入題目失敗：${e.message}</p>`;
         }
     };
+    /**
+     * 將從 GAS 抓回來的題目資料轉換成 HTML 表格
+     * @param {Array} questions - 格式為 [[QID, 題目, 維度, 分類, 標記], ...]
+     */
+    function renderQuestions(questions) {
+        const tableBody = document.querySelector('#questionTable tbody');
+        if (!tableBody) {
+            // 如果 HTML 裡沒有 tbody，就抓 table 本身
+            const table = document.getElementById('questionTable');
+            table.innerHTML = '<tbody></tbody>';
+        }
+        
+        const targetBody = document.querySelector('#questionTable tbody');
+        targetBody.innerHTML = ''; // 清空載入中文字
+    
+        questions.forEach((row) => {
+            const qId = row[0];       // 第一欄：QID (e.g., Q1)
+            const qText = row[1];     // 第二欄：題目內容
+            
+            // 建立一行表格
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="question-text">${qText}</td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="0" required><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="1"><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="2"><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="3"><span class="custom-radio"></span></label></td>
+            `;
+            targetBody.appendChild(tr);
+        });
+    
+        // 顯示表單，隱藏載入提示
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('quizForm').style.display = 'block';
+    }
 
     // 2. 送出給 Vercel API 進行分析
     async function handleFinalSubmit() {
