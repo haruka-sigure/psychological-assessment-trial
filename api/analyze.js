@@ -30,7 +30,14 @@ export default async function handler(req, res) {
     // 構建給 AI 的提示：包含 GAS 算出的各維度評估
     const aiPrompt = `使用者測驗結果如下：${JSON.stringify(gasResult.results)}。請根據這些傾向提供分析。`;
     const aiResult = await model.generateContent(aiPrompt);
+    // 💡 增加檢查：確保模型真的有生成內容
+    const result = await model.generateContent(aiPrompt);
+    const response = await result.response;
     const aiText = aiResult.response.text();
+
+    if (!aiText) {
+        throw new Error("Gemini 未能生成分析文字，請檢查輸入內容。");
+    }
 
     // --- 第三步：整合回傳給前端 ---
     res.status(200).json({
@@ -42,6 +49,8 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
-  }
+    console.error("Gemini API Error Detail:", error);
+    // 💥 這裡會回傳具體的錯誤訊息到前端，方便你直接看
+    res.status(500).json({ status: 'error', message: "Gemini 服務錯誤: " + error.message });
+}
 }
