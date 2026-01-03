@@ -80,7 +80,7 @@
 <script>
     // 1. 頁面載入時，先去 GAS 抓題目
     window.onload = async () => {
-        const GAS_URL = "你的_GAS_網址"; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwQ7ZM8VAKFVRoOU-l2wrTLwUn5cF1Z7Vwl-6aZe73gxrKlyW8M77iBDMymQMSB3QEVKA/exec"; 
         // 建議在 GAS 的 doGet 增加一個參數，讓它回傳 JSON 題目而非 HTML
         const response = await fetch(GAS_URL + "?action=getQuestions");
         const questions = await response.json();
