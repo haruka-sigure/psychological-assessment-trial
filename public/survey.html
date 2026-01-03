@@ -29,25 +29,26 @@
 </head>
 <body>
 
-<div class="card">
-    <h2>讓我們更了解你的近況</h2>
-    <p style="color: #666;">請描述您最近的心情、睡眠或任何困擾...</p>
+<div id="resultContainer" class="result-container" style="display:none;">
     
-    <textarea id="userInput" placeholder="例如：我最近常覺得心跳很快，對於出門社交感到壓力很大..."></textarea>
-    
-    <button class="btn-main" id="submitBtn" onclick="submitToAI()">開始分析</button>
-    
-    <div id="loading" class="loading">暖心導師與系統正在處理中，請稍候...</div>
-
-    <div id="resultContainer" class="result-container">
-        <h3>測驗評估結果</h3>
-        <div id="scoreList"></div> <div class="ai-report" id="aiAnalysis"></div> <div id="detailSection" class="detail-section" style="display:none;">
-            <p><strong>建議進一步了解：</strong></p>
-            <div id="detailButtons"></div>
-        </div>
+    <div class="section-box">
+        <h3>📊 評估結果摘要</h3>
+        <div id="scoreList"></div> 
     </div>
-</div>
 
+    <div id="aiAdviceBox" class="ai-report" style="display:none;">
+        <h4 style="margin-top:0; color: #8a4af3;">💡 暖心導師的建議</h4>
+        <div id="aiContent"></div>
+    </div>
+
+    <div id="detailSection" class="detail-section" style="display:none;">
+        <p><strong>根據您的狀態，建議進一步完成：</strong></p>
+        <div id="detailButtons"></div>
+    </div>
+
+    <button onclick="location.reload()" style="margin-top:20px; background:#ccc;">重新測驗</button>
+</div>
+    
 <script>
     async function submitToAI() {
         const userInput = document.getElementById('userInput').value;
@@ -91,39 +92,54 @@
     }
 
     function renderResults(data) {
-        document.getElementById('resultContainer').style.display = "block";
-        
-        // 1. 顯示 AI 暖心報告
-        document.getElementById('aiAnalysis').innerText = data.aiAnalysis;
+    const resultContainer = document.getElementById('resultContainer');
+    const scoreList = document.getElementById('scoreList');
+    const aiAdviceBox = document.getElementById('aiAdviceBox');
+    const aiContent = document.getElementById('aiContent');
+    const detailSection = document.getElementById('detailSection');
+    const detailButtons = document.getElementById('detailButtons');
 
-        // 2. 顯示各維度評估結果 (來自 GAS)
-        const scoreList = document.getElementById('scoreList');
-        scoreList.innerHTML = '';
+    // 1. 顯示容器
+    resultContainer.style.display = "block";
+
+    // 2. 渲染分數 (來自 GAS 的 results)
+    scoreList.innerHTML = '';
+    if (data.scores && data.scores.length > 0) {
         data.scores.forEach(item => {
             const div = document.createElement('div');
             div.className = 'score-item';
             div.innerHTML = `<span>${item.dimension}</span><strong>${item.evaluation}</strong>`;
             scoreList.appendChild(div);
         });
-
-        // 3. 生成詳細評量按鈕 (來自 GAS 回傳的 buttons)
-        const detailBtnDiv = document.getElementById('detailButtons');
-        const detailSection = document.getElementById('detailSection');
-        detailBtnDiv.innerHTML = '';
-
-        if (data.buttons && data.buttons.length > 0) {
-            detailSection.style.display = "block";
-            data.buttons.forEach(btnInfo => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-detail';
-                btn.innerText = btnInfo.label;
-                btn.onclick = () => startDetailSurvey(btnInfo.dimension);
-                detailBtnDiv.appendChild(btn);
-            });
-        } else {
-            detailSection.style.display = "none";
-        }
     }
+
+    // 3. 渲染 AI 建議 (插入在中間)
+    if (data.aiAnalysis) {
+        aiAdviceBox.style.display = "block";
+        aiContent.innerText = data.aiAnalysis;
+    } else {
+        aiAdviceBox.style.display = "none";
+    }
+
+    // 4. 渲染詳細評量按鈕
+    detailButtons.innerHTML = '';
+    if (data.buttons && data.buttons.length > 0) {
+        detailSection.style.display = "block";
+        data.buttons.forEach(btnInfo => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-detail';
+            btn.innerText = btnInfo.label;
+            // 這裡可以呼叫詳細問卷的邏輯
+            btn.onclick = () => switchToDetailMode(btnInfo.dimension, data.detailQuestions);
+            detailButtons.appendChild(btn);
+        });
+    } else {
+        detailSection.style.display = "none";
+    }
+
+    // 5. 自動捲動到結果區，優化使用者體驗
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+}
 
     function startDetailSurvey(dimension) {
         alert("即將開始「" + dimension + "」的深度評量，請稍候...");
