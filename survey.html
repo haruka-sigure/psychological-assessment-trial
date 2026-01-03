@@ -127,7 +127,12 @@
     async function handleFinalSubmit() {
     const btn = document.getElementById('submitBtn');
     const form = document.getElementById('quizForm');
-    
+
+    if (btn.disabled) return; // 如果按鈕已經禁用，就不執行
+
+    btn.disabled = true; // 立刻禁用
+    btn.innerText = "分析生成中，請稍候...";
+        
     // 1. 收集答案
     const formData = new FormData(form);
     const answers = {};
