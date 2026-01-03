@@ -154,17 +154,12 @@
         document.querySelectorAll('.mobile-btn').forEach(btn => btn.classList.remove('active'));
     }
 function goToSurvey() {
-    const gasUrl = "https://script.google.com/macros/s/AKfycbwQ7ZM8VAKFVRoOU-l2wrTLwUn5cF1Z7Vwl-6aZe73gxrKlyW8M77iBDMymQMSB3QEVKA/exec";
-
     const btn = document.querySelector('.start-btn');
-    btn.innerText = "測驗載入中..."; // 更改文字
-    btn.style.opacity = "0.7";       // 變淡
-    btn.disabled = true;             // 禁用按鈕防止重複點擊
-    // 如果有需要，甚至可以把使用者最後點擊的疾病資訊傳過去 (選填)
-    // const activeDisease = document.querySelector('.mobile-btn.active')?.innerText || "none";
-    // window.location.href = gasUrl + "?source=" + encodeURIComponent(activeDisease);
-    
-    window.location.href = gasUrl;
+    btn.innerText = "測驗載入中...";
+    btn.disabled = true;
+
+    // 💥 關鍵修改：不要導向 GAS URL，而是導向 Vercel 專案內的 survey.html
+    window.location.href = "survey.html"; 
 }
 </script>
 
