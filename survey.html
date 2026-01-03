@@ -32,10 +32,21 @@
 <div class="card" id="surveyCard">
     <div id="loadingQuestions">載入題目中，請稍候...</div>
     <form id="quizForm" style="display:none;">
-        <table id="questionTable">
-            </table>
-        <button type="button" onclick="handleFinalSubmit()">送出測驗</button>
-    </form>
+    <table id="questionTable">
+        <thead>
+            <tr>
+                <th>題目</th>
+                <th>從不</th>
+                <th>很少</th>
+                <th>有時</th>
+                <th>時常</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+    <button type="submit" id="submitBtn">送出評估</button>
+</form>
 
     <div id="resultContainer" style="display:none;">
         <h3>📊 測驗評估報告</h3>
