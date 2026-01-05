@@ -1,30 +1,38 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
+
+// 初始化 OpenAI 客戶端，但指向 Groq 的伺服器
+const openai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1", // 這行最重要，它讓請求轉向 Groq
+});
 
 export default async function handler(req, res) {
-  // 強制設定 JSON 回傳格式
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ status: 'error', message: '僅支援 POST' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   const { inputData } = req.body;
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    
-    // 💡 為什麼選這個？因為之前的紀錄顯示您的 Key 只有這條路是通的 (429 比 404 好)
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash" 
+    const completion = await openai.chat.completions.create({
+      // 推薦使用 llama-3.3-70b-versatile，速度快且分析能力強
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: "你是一位暖心的心理諮商導師。請根據使用者提供的測驗選項數據，計算其心理狀態傾向，並給予一段約 150 字、溫柔且具鼓勵性的建議。"
+        },
+        {
+          role: "user",
+          content: `使用者測驗數據如下：${JSON.stringify(inputData)}`
+        }
+      ],
+      temperature: 0.7, // 讓 AI 的回答更具人性化，不會太死板
     });
 
-    // 準備 Prompt
-    const prompt = `你是一位心理諮商師。以下是使用者的測驗選項數據：${JSON.stringify(inputData)}。請根據這些數據計算壓力傾向，並給予 150 字內暖心且專業的建議。`;
-
-    // 執行生成
-    const result = await model.generateContent(prompt);
-    const aiText = result.response.text();
+    const aiText = completion.choices[0].message.content;
 
     return res.status(200).json({
       status: 'success',
@@ -32,19 +40,10 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error("Gemini Error:", error.message);
-    
-    // 處理 429 額度問題
-    if (error.message.includes("429") || error.message.includes("quota")) {
-      return res.status(429).json({ 
-        status: 'error', 
-        message: "目前使用人數較多，請等候 1 分鐘再按一次「送出評估」。" 
-      });
-    }
-
+    console.error("Groq API Error:", error);
     return res.status(500).json({ 
       status: 'error', 
-      message: "分析發生錯誤：" + error.message 
+      message: "分析暫時無法執行：" + error.message 
     });
   }
 }
