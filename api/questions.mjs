@@ -1,19 +1,11 @@
-// api/questions.js
 export default async function handler(req, res) {
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwQ7ZM8VAKFVRoOU-l2wrTLwUn5cF1Z7Vwl-6aZe73gxrKlyW8M77iBDMymQMSB3QEVKA/exec?action=getQuestions";
-
+  const GAS_URL = process.env.GAS_WEB_APP_URL;
   try {
-    const response = await fetch(GAS_URL, {
-        method: 'GET',
-        redirect: 'follow'
-    });
-    
-    // 如果 GAS 回傳的是 HTML 錯誤頁面，這裡會報錯
+    // 呼叫 GAS 並告訴它我們要抓題目 (假設您的 GAS 有處理 action=getQuestions)
+    const response = await fetch(`${GAS_URL}?action=getQuestions`);
     const data = await response.json();
-    
-    // 將 GAS 抓到的題目回傳給前端
     res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({ status: 'error', message: "無法從 GAS 抓取題目: " + error.message });
+    res.status(500).json({ status: 'error', message: error.message });
   }
 }
