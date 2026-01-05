@@ -124,7 +124,7 @@
     }
 
     // 2. 送出給 Vercel API 進行分析
-    async function handleFinalSubmit() {
+    async function handleFinalSubmit(dimension = null) {
     const btn = document.getElementById('submitBtn');
     const form = document.getElementById('quizForm');
 
