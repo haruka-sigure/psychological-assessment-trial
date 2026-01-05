@@ -233,16 +233,25 @@
     const filtered = allDetailQuestions.filter(q => q[2] === dimension);
     if (filtered.length === 0) return alert("無此維度題目");
 
-    // 隱藏結果，回到表單
+    // 1. 隱藏結果區，顯示問卷區
     document.getElementById('resultContainer').style.display = 'none';
     document.getElementById('quizForm').style.display = 'block';
 
-    // 更新按鈕文字，讓 analyze.js 知道這是詳細評量
+    // 2. 取得按鈕元素
     const btn = document.getElementById('submitBtn');
-    btn.innerText = `送出 ${dimension} 詳細評量`;
-    btn.onclick = () => handleFinalSubmit(dimension); // 傳入維度名稱
 
-    renderQuestions(filtered); // 重新渲染表格
+    // 💥 關鍵修正：解除按鈕禁用狀態，並重置文字
+    btn.disabled = false; 
+    btn.innerText = `送出 ${dimension} 詳細評量`;
+    
+    // 3. 重新綁定點擊事件
+    btn.onclick = () => handleFinalSubmit(dimension);
+
+    // 4. 重新渲染題目
+    renderQuestions(filtered);
+
+    // 5. 滾動到頂部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
 
