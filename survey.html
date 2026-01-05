@@ -25,6 +25,15 @@
         .detail-section { margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
 
         .loading { display: none; margin: 20px 0; color: #666; }
+        .bar-track { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.8s ease-in-out; }
+        .bar-fill.high { background: #ff4d4d; }
+        .bar-fill.medium { background: #ffa500; }
+        .bar-fill.low { background: #2ecc71; }
+        .high { color: #ff4d4d; font-weight: bold; }
+        .medium { color: #ffa500; font-weight: bold; }
+        .low { color: #2ecc71; font-weight: bold; }
+        .score-item-v2 { margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -139,6 +148,8 @@
     if (dimension) {
         answers.assessmentType = 'detail';
         answers.dimension = dimension;
+        // 💥 將主評量分數傳回去給 GAS
+        answers.mainScore = CURRENT_MAIN_SCORES[dimension] || 0;
     }
     formData.forEach((value, key) => {
         answers[key] = parseInt(value);
@@ -185,6 +196,9 @@
     }
 }
 
+    // 在 global 變數中儲存主評量分數
+    let CURRENT_MAIN_SCORES = {};
+    
     function renderResults(data) {
     const resultContainer = document.getElementById('resultContainer');
     const scoreList = document.getElementById('scoreList');
@@ -198,23 +212,33 @@
 
     // 2. 渲染分數 (來自 GAS 的 results)
     scoreList.innerHTML = '';
-    if (data.scores && data.scores.length > 0) {
-        data.scores.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'score-item';
-            div.innerHTML = `<span>${item.dimension}</span><strong>${item.evaluation}</strong>`;
-            scoreList.appendChild(div);
-        });
-    }
+    data.scores.forEach(s => {
+        CURRENT_MAIN_SCORES[s.dimension] = s.score;
+    });
+    data.scores.forEach(item => {
+        // 判斷顏色
+        let statusClass = item.evaluation.includes('高') ? 'high' : (item.evaluation.includes('中') ? 'medium' : 'low');
+        let percentage = Math.min((item.score / (item.maxScore || 12)) * 100, 100);
 
-    // 3. 渲染 AI 建議 (插入在中間)
-    if (data.aiAnalysis) {
-        aiAdviceBox.style.display = "block";
-        aiContent.innerText = data.aiAnalysis;
-    } else {
-        aiAdviceBox.style.display = "none";
-    }
+        const div = document.createElement('div');
+        div.className = 'score-item-v2'; // 使用新的樣式類
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold;">${item.dimension}</span>
+                <span class="${statusClass}">${item.evaluation}</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            </div>
+            <div style="text-align: right; font-size: 0.8em; color: #888;">${item.score} / ${item.maxScore || 12}</div>
+        `;
+        scoreList.appendChild(div);
+    });
 
+    aiContent.innerText = data.aiAnalysis;
+    resultContainer.style.display = "block";
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+        
     // 4. 渲染詳細評量按鈕
     detailButtons.innerHTML = '';
     if (data.buttons && data.buttons.length > 0) {
@@ -238,28 +262,32 @@
     const resultContainer = document.getElementById('resultContainer');
     const scoreList = document.getElementById('scoreList');
     const aiAdviceBox = document.getElementById('aiAdviceBox');
+    const aiContent = document.getElementById('aiContent');
     
-    resultContainer.style.display = "block";
-    
-    // 1. 顯示該維度的深度得分
-    // 假設 GAS 回傳的欄位是 data.dimension, data.score, data.evaluation
+    // 渲染深度分析的長條圖
+    let statusClass = data.evaluation.includes('高') ? 'high' : (data.evaluation.includes('中') ? 'medium' : 'low');
+    let percentage = Math.min((data.totalScore / data.maxScore) * 100, 100);
+
     scoreList.innerHTML = `
-        <div class="score-item" style="background: #fff; border: 2px solid #8a4af3;">
-            <span><strong>【深度分析】${data.dimension}</strong></span>
-            <strong>${data.evaluation} (${data.score}分)</strong>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="margin: 0; color: #8a4af3;">🎯 ${data.dimension} 深度分析報告</h4>
         </div>
-        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
-            此為結合初步篩檢與進階評估後的最終得分。
-        </p>
+        <div class="score-item-v2">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong>加總最終得分</strong>
+                <span class="${statusClass}">${data.evaluation}</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            </div>
+            <div style="text-align: right; font-size: 0.8em; color: #888;">${data.totalScore} / ${data.maxScore} (含初步篩檢)</div>
+        </div>
     `;
 
-    // 2. 詳細評量通常不一定要 AI 再次總結，或者您可以顯示不同的提示
-    aiAdviceBox.style.display = "none"; 
+    aiContent.innerText = data.aiAnalysis; // 顯示深度建議
+    document.getElementById('resultContainer').style.display = "block";
+    document.getElementById('detailSection').style.display = "none"; // 完成後隱藏按鈕
 
-    // 3. 隱藏詳細按鈕區塊 (因為剛做完)
-    document.getElementById('detailSection').style.display = "none";
-
-    resultContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
     function startDetailSurvey(dimension) {
