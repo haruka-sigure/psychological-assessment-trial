@@ -136,6 +136,10 @@
     // 1. 收集答案
     const formData = new FormData(form);
     const answers = {};
+    if (dimension) {
+        answers.assessmentType = 'detail';
+        answers.dimension = dimension;
+    }
     formData.forEach((value, key) => {
         answers[key] = parseInt(value);
     });
@@ -225,6 +229,21 @@
         alert("即將開始「" + dimension + "」的深度評量，請稍候...");
         // 這裡可以導向詳細問卷介面，或動態載入 data.detailQuestions
     }
+    function switchToDetailMode(dimension, allDetailQuestions) {
+    const filtered = allDetailQuestions.filter(q => q[2] === dimension);
+    if (filtered.length === 0) return alert("無此維度題目");
+
+    // 隱藏結果，回到表單
+    document.getElementById('resultContainer').style.display = 'none';
+    document.getElementById('quizForm').style.display = 'block';
+
+    // 更新按鈕文字，讓 analyze.js 知道這是詳細評量
+    const btn = document.getElementById('submitBtn');
+    btn.innerText = `送出 ${dimension} 詳細評量`;
+    btn.onclick = () => handleFinalSubmit(dimension); // 傳入維度名稱
+
+    renderQuestions(filtered); // 重新渲染表格
+}
 </script>
 
 </body>
