@@ -161,12 +161,22 @@
 
         const result = await response.json();
 
-        if (result.status === 'success') {
-            // 4. 隱藏表單，顯示結果
+        // 💥 修正後的判斷邏輯：
+        // 只要狀態包含 'success' 字眼都視為成功
+        if (result.status === 'success' || result.status === 'detail_success') {
+            
             document.getElementById('quizForm').style.display = 'none';
-            renderResults(result); // 執行顯示結果的函式
+
+            if (result.status === 'detail_success') {
+                // 如果是詳細評量，我們執行專門顯示詳細結果的函式
+                renderDetailResults(result); 
+            } else {
+                // 如果是主問卷，執行原本的渲染函式
+                renderResults(result);
+            }
+            
         } else {
-            throw new Error(result.message);
+            throw new Error(result.message || "伺服器回傳未知錯誤");
         }
     } catch (e) {
         alert("分析失敗：" + e.message);
@@ -222,6 +232,33 @@
     }
 
     // 5. 自動捲動到結果區，優化使用者體驗
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+}
+    function renderDetailResults(data) {
+    const resultContainer = document.getElementById('resultContainer');
+    const scoreList = document.getElementById('scoreList');
+    const aiAdviceBox = document.getElementById('aiAdviceBox');
+    
+    resultContainer.style.display = "block";
+    
+    // 1. 顯示該維度的深度得分
+    // 假設 GAS 回傳的欄位是 data.dimension, data.score, data.evaluation
+    scoreList.innerHTML = `
+        <div class="score-item" style="background: #fff; border: 2px solid #8a4af3;">
+            <span><strong>【深度分析】${data.dimension}</strong></span>
+            <strong>${data.evaluation} (${data.score}分)</strong>
+        </div>
+        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+            此為結合初步篩檢與進階評估後的最終得分。
+        </p>
+    `;
+
+    // 2. 詳細評量通常不一定要 AI 再次總結，或者您可以顯示不同的提示
+    aiAdviceBox.style.display = "none"; 
+
+    // 3. 隱藏詳細按鈕區塊 (因為剛做完)
+    document.getElementById('detailSection').style.display = "none";
+
     resultContainer.scrollIntoView({ behavior: 'smooth' });
 }
 
