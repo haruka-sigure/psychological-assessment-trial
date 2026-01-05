@@ -1,49 +1,52 @@
 import OpenAI from "openai";
 
-// 初始化 OpenAI 客戶端，但指向 Groq 的伺服器
 const openai = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1", // 這行最重要，它讓請求轉向 Groq
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
 export default async function handler(req, res) {
-  res.setHeader('Content-Type', 'application/json');
+  if (req.method !== 'POST') return res.status(405).send('只支援 POST');
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
-
-  const { inputData } = req.body;
+  const GAS_URL = process.env.GAS_WEB_APP_URL;
+  const { inputData } = req.body; // 這是前端傳來的 JSON 答案
 
   try {
-    const completion = await openai.chat.completions.create({
-      // 推薦使用 llama-3.3-70b-versatile，速度快且分析能力強
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: "你是一位暖心的心理諮商導師。請根據使用者提供的測驗選項數據，計算其心理狀態傾向，並給予一段約 150 字、溫柔且具鼓勵性的建議。"
-        },
-        {
-          role: "user",
-          content: `使用者測驗數據如下：${JSON.stringify(inputData)}`
-        }
-      ],
-      temperature: 0.7, // 讓 AI 的回答更具人性化，不會太死板
+    // 1. 轉發給 GAS 算分與存檔
+    // 注意：GAS 的 e.parameter.data 期待的是字串化後的 JSON
+    const gasResponse = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ data: JSON.stringify(inputData) })
     });
 
-    const aiText = completion.choices[0].message.content;
+    const gasResult = await gasResponse.json();
 
+    if (gasResult.status === 'error') throw new Error(gasResult.message);
+
+    // 2. 只有主問卷（有 results 且不是詳細評量）才呼叫 AI
+    let aiText = "";
+    if (gasResult.results && !inputData.assessmentType) {
+      const completion = await openai.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "你是一位暖心的心理諮商師。請根據分數結果給予 150 字內的建議，語氣要溫柔。" },
+          { role: "user", content: `分數結果：${JSON.stringify(gasResult.results)}` }
+        ],
+      });
+      aiText = completion.choices[0].message.content;
+    }
+
+    // 3. 統一回傳給前端
+    // 💥 這裡做了一個關鍵映射：將 GAS 的 results 映射到前端期待的 scores 欄位
     return res.status(200).json({
-      status: 'success',
+      ...gasResult,
+      scores: gasResult.results, // 適配您 survey.html 中的 data.scores
       aiAnalysis: aiText
     });
 
   } catch (error) {
-    console.error("Groq API Error:", error);
-    return res.status(500).json({ 
-      status: 'error', 
-      message: "分析暫時無法執行：" + error.message 
-    });
+    console.error("API 錯誤:", error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 }
