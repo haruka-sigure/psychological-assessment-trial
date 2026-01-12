@@ -23,6 +23,12 @@
         .score-item { background: #f0f0f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
         .ai-report { background: #fdf2d9; padding: 20px; border-radius: 15px; border-left: 5px solid #fbc02d; margin-top: 20px; white-space: pre-wrap; }
         .detail-section { margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
+        /* 已完成按鈕的樣式 */
+        .btn-detail.done {
+            background: #e0e0e0;
+            border-color: #bbb;
+            color: #888;
+        }
 
         .loading { display: none; margin: 20px 0; color: #666; }
         .bar-track { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
@@ -74,6 +80,11 @@
 </div>
 
 <script>
+    // 儲存狀態與資料
+    let CURRENT_MAIN_SCORES = {};
+    let ALL_DETAIL_QUESTIONS = []; // 暫存所有詳細題目
+    let ALL_AVAILABLE_BUTTONS = []; // 暫存所有可用的按鈕清單
+    let COMPLETED_DIMENSIONS = {};  // 紀錄已完成的維度，格式如：{ "憂鬱": true }
     // 1. 頁面載入時，先去 GAS 抓題目
     // survey.html 內的 script 部分
     window.onload = async () => {
@@ -234,6 +245,12 @@
         `;
         scoreList.appendChild(div);
     });
+    // 💥 關鍵修改：將詳細評量資料存入全域變數
+    ALL_DETAIL_QUESTIONS = data.detailQuestions || [];
+    ALL_AVAILABLE_BUTTONS = data.buttons || [];
+
+    // 渲染按鈕
+    updateDetailButtons();
 
     aiContent.innerText = data.aiAnalysis;
     resultContainer.style.display = "block";
@@ -263,6 +280,11 @@
     const scoreList = document.getElementById('scoreList');
     const aiAdviceBox = document.getElementById('aiAdviceBox');
     const aiContent = document.getElementById('aiContent');
+
+    // 💥 標記此維度已完成
+    if (data.dimension) {
+        COMPLETED_DIMENSIONS[data.dimension] = true;
+    }
     
     // 渲染深度分析的長條圖
     let statusClass = data.evaluation.includes('高') ? 'high' : (data.evaluation.includes('中') ? 'medium' : 'low');
@@ -286,7 +308,11 @@
 
     aiContent.innerText = data.aiAnalysis; // 顯示深度建議
     document.getElementById('resultContainer').style.display = "block";
-    document.getElementById('detailSection').style.display = "none"; // 完成後隱藏按鈕
+    // 💥 修改點：更新並顯示詳細評量按鈕區塊，不要隱藏
+    updateDetailButtons();
+    detailSection.style.display = "block"; 
+
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
 
 }
 
@@ -294,29 +320,51 @@
         alert("即將開始「" + dimension + "」的深度評量，請稍候...");
         // 這裡可以導向詳細問卷介面，或動態載入 data.detailQuestions
     }
-    function switchToDetailMode(dimension, allDetailQuestions) {
-    const filtered = allDetailQuestions.filter(q => q[2] === dimension);
+    function switchToDetailMode(dimension, questions = null) {
+    // 如果沒傳入 questions，就從全域變數拿
+    const qSource = questions || ALL_DETAIL_QUESTIONS;
+    const filtered = qSource.filter(q => q[2] === dimension);
+    
     if (filtered.length === 0) return alert("無此維度題目");
 
-    // 1. 隱藏結果區，顯示問卷區
     document.getElementById('resultContainer').style.display = 'none';
     document.getElementById('quizForm').style.display = 'block';
 
-    // 2. 取得按鈕元素
     const btn = document.getElementById('submitBtn');
-
-    // 💥 關鍵修正：解除按鈕禁用狀態，並重置文字
     btn.disabled = false; 
     btn.innerText = `送出 ${dimension} 詳細評量`;
     
-    // 3. 重新綁定點擊事件
     btn.onclick = () => handleFinalSubmit(dimension);
-
-    // 4. 重新渲染題目
     renderQuestions(filtered);
-
-    // 5. 滾動到頂部
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+    function updateDetailButtons() {
+    const detailSection = document.getElementById('detailSection');
+    const detailButtons = document.getElementById('detailButtons');
+    detailButtons.innerHTML = '';
+
+    if (ALL_AVAILABLE_BUTTONS.length > 0) {
+        detailSection.style.display = "block";
+        
+        ALL_AVAILABLE_BUTTONS.forEach(btnInfo => {
+            const btn = document.createElement('button');
+            const isDone = COMPLETED_DIMENSIONS[btnInfo.dimension];
+
+            // 判斷是否已完成
+            if (isDone) {
+                btn.className = 'btn-detail done'; // 加入已完成樣式
+                btn.innerText = `✓ ${btnInfo.label} (已完成)`;
+                btn.disabled = true; // 禁用按鈕，防止重複作答
+                btn.style.opacity = "0.6";
+                btn.style.cursor = "default";
+            } else {
+                btn.className = 'btn-detail';
+                btn.innerText = btnInfo.label;
+                btn.onclick = () => switchToDetailMode(btnInfo.dimension, ALL_DETAIL_QUESTIONS);
+            }
+            detailButtons.appendChild(btn);
+        });
+    }
 }
 </script>
 
