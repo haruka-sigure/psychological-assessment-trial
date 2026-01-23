@@ -49,4 +49,9 @@ export default async function handler(req, res) {
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }
+  // 在分析完成後，寫入 TiDB
+await connection.execute(
+  'INSERT INTO assessment_logs (assessment_type, dimension, total_score, ai_advice) VALUES (?, ?, ?, ?)',
+  [inputData.assessmentType, inputData.dimension || 'all', totalScore, aiAnalysis]
+);
 }
