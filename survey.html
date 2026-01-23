@@ -318,9 +318,15 @@
     function switchToDetailMode(dimension, questions = null) {
     // 如果沒傳入 questions，就從全域變數拿
     const qSource = questions || ALL_DETAIL_QUESTIONS;
-    const filtered = qSource.filter(q => q[2] === dimension);
     
-    if (filtered.length === 0) return alert("無此維度題目");
+    // 💥 修正點：資料現在是物件，不能用 q[2]，要用 q.dimension
+    // 同時確保這裡的屬性名與您的 TiDB 欄位名一致 (例如 row.dimension)
+    const filtered = qSource.filter(q => q.dimension === dimension);
+    
+    if (filtered.length === 0) {
+        console.error("篩選失敗，原始資料：", qSource);
+        return alert("找不到「" + dimension + "」的題目，請檢查資料庫欄位名稱。");
+    }
 
     document.getElementById('resultContainer').style.display = 'none';
     document.getElementById('quizForm').style.display = 'block';
@@ -330,7 +336,7 @@
     btn.innerText = `送出 ${dimension} 詳細評量`;
     
     btn.onclick = () => handleFinalSubmit(dimension);
-    renderQuestions(filtered);
+    renderQuestions(filtered); // 重新渲染篩選後的題目
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
     function updateDetailButtons() {
