@@ -260,7 +260,7 @@
             btn.className = 'btn-detail';
             btn.innerText = btnInfo.label;
             // 這裡可以呼叫詳細問卷的邏輯
-            btn.onclick = () => switchToDetailMode(btnInfo.dimension, data.detailQuestions);
+            btn.onclick = () => switchToDetailMode(btnInfo.dimension);
             detailButtons.appendChild(btn);
         });
     } else {
