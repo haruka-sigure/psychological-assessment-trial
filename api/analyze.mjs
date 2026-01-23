@@ -1,26 +1,85 @@
 import OpenAI from "openai";
+import mysql from 'mysql2/promise';
 
 const openai = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: "https://api.groq.com/openai/v1",
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
 });
 
 export default async function handler(req, res) {
-  const GAS_URL = process.env.GAS_WEB_APP_URL;
-  const { inputData } = req.body;
+    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-  try {
-    // 1. 轉發給 GAS (包含 mainScore)
-    const gasResponse = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ data: JSON.stringify(inputData) })
+    const { inputData } = req.body;
+    const isDetail = inputData.assessmentType === 'detail';
+    const currentSub = isDetail ? 'Detail' : 'Main';
+
+    const connection = await mysql.createConnection({
+        host: process.env.TIDB_HOST,
+        user: process.env.TIDB_USER,
+        password: process.env.TIDB_PASSWORD,
+        database: process.env.TIDB_DB,
+        port: process.env.TIDB_PORT,
+        ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true }
     });
-    const gasResult = await gasResponse.json();
 
-    // 2. 根據類型決定 AI Prompt
-    let systemPrompt = "";
-    let userPrompt = "";
+    try {
+        // 1. 取得所有題目資料 (過濾當前問卷類型)
+        const [questions] = await connection.execute(
+            'SELECT qid, dimension FROM questions WHERE subassessment = ?',
+            [currentSub]
+        );
+
+        // 2. 計算各維度總分
+        // 假設前端傳來的資料格式為 { Q1: 3, Q2: 2, dimension: "情緒", ... }
+        const dimensionScores = {};
+        questions.forEach(q => {
+            const val = inputData[q.qid];
+            if (val !== undefined) {
+                dimensionScores[q.dimension] = (dimensionScores[q.dimension] || 0) + parseInt(val);
+            }
+        });
+
+        // 3. 取得評分標準 (過濾當前問卷類型)
+        const [criteria] = await connection.execute(
+            'SELECT * FROM assessment_criteria WHERE subassessment = ?',
+            [currentSub]
+        );
+
+        // 4. 判定等級 (Evaluation) 與 組裝結果
+        // 如果是詳細問卷，我們只關心該維度；如果是主問卷，則跑遍所有維度
+        let finalResults = [];
+        
+        if (isDetail) {
+            const dim = inputData.dimension;
+            const score = dimensionScores[dim] || 0;
+            // 這裡加入主問卷傳過來的分數 (mainScore) 如果有的話
+            const totalScore = score + (parseInt(inputData.mainScore) || 0);
+            
+            const match = criteria.find(c => 
+                c.dimension === dim && totalScore >= c.minscore && totalScore <= c.maxscore
+            );
+
+            finalResults.push({
+                dimension: dim,
+                score: totalScore,
+                evaluation: match ? match.evaluation : "未知",
+                maxScore: match ? match.maxscore : 20 // 根據資料庫設定或給預設
+            });
+        } else {
+            // 主問卷：處理所有出現在題目中的維度
+            finalResults = Object.keys(dimensionScores).map(dim => {
+                const score = dimensionScores[dim];
+                const match = criteria.find(c => 
+                    c.dimension === dim && score >= c.minscore && score <= c.maxscore
+                );
+                return {
+                    dimension: dim,
+                    score: score,
+                    evaluation: match ? match.evaluation : "未知",
+                    maxScore: match ? match.maxscore : 12
+                };
+            });
+        }
 
     if (inputData.assessmentType === 'detail') {
       // 深度評量的專屬 AI 建議
@@ -33,25 +92,43 @@ export default async function handler(req, res) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-    });
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+        });
 
-    return res.status(200).json({
-      ...gasResult,
-      scores: gasResult.results, // 適配主畫面
-      aiAnalysis: completion.choices[0].message.content
-    });
+        const aiAnalysis = completion.choices[0].message.content;
 
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
-  }
-  // 在分析完成後，寫入 TiDB
-await connection.execute(
-  'INSERT INTO assessment_logs (assessment_type, dimension, total_score, ai_advice) VALUES (?, ?, ?, ?)',
-  [inputData.assessmentType, inputData.dimension || 'all', totalScore, aiAnalysis]
-);
+        // 6. 寫入 assessment_logs (存檔)
+        await connection.execute(
+            'INSERT INTO assessment_logs (assessment_type, dimension, total_score, evaluation, ai_advice) VALUES (?, ?, ?, ?, ?)',
+            [
+                currentSub, 
+                isDetail ? inputData.dimension : 'All', 
+                isDetail ? finalResults[0].score : 0, 
+                isDetail ? finalResults[0].evaluation : 'N/A', 
+                aiAnalysis
+            ]
+        );
+
+        // 7. 回傳結果 (對應您的前端期待)
+        res.status(200).json({
+            status: isDetail ? 'detail_success' : 'success',
+            results: finalResults, // 對應主畫面的 scores
+            scores: finalResults,  // 多存一個 key 確保前端相容
+            aiAnalysis: aiAnalysis,
+            dimension: isDetail ? inputData.dimension : null,
+            totalScore: isDetail ? finalResults[0].score : null,
+            maxScore: isDetail ? finalResults[0].maxScore : null,
+            evaluation: isDetail ? finalResults[0].evaluation : null
+        });
+
+    } catch (error) {
+        console.error("Analyze API Error:", error);
+        res.status(500).json({ status: 'error', message: error.message });
+    } finally {
+        await connection.end();
+    }
 }
