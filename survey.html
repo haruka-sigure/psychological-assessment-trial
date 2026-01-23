@@ -88,25 +88,19 @@
     // 1. 頁面載入時，先去 GAS 抓題目
     // survey.html 內的 script 部分
     window.onload = async () => {
-        const loadingDiv = document.getElementById('loadingQuestions');
+    const loadingDiv = document.getElementById('loadingQuestions');
+    try {
+        // 💡 只抓取主問卷題目
+        const response = await fetch('/api/questions?type=Main'); 
         
-        try {
-            // 💥 修改點：不再直接 fetch script.google.com，而是 fetch 自己的 API
-            const response = await fetch('/api/questions');
-            
-            if (!response.ok) throw new Error("API 回傳失敗");
-            
-            const questions = await response.json();
-            
-            if (questions.status === 'error') throw new Error(questions.message);
-            
-            renderQuestions(questions); // 執行你原本畫出題目的函式
-            
-        } catch (e) {
-            console.error("抓取題目失敗:", e);
-            loadingDiv.innerHTML = `<p style="color:red;">載入題目失敗：${e.message}</p>`;
-        }
-    };
+        if (!response.ok) throw new Error("API 回傳失敗");
+        const questions = await response.json();
+        
+        renderQuestions(questions);
+    } catch (e) {
+        loadingDiv.innerHTML = `<p style="color:red;">載入失敗：${e.message}</p>`;
+    }
+};
     /**
      * 將從 GAS 抓回來的題目資料轉換成 HTML 表格
      * @param {Array} questions - 格式為 [[QID, 題目, 維度, 分類, 標記], ...]
