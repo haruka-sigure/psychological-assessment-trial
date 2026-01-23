@@ -315,29 +315,51 @@
         alert("即將開始「" + dimension + "」的深度評量，請稍候...");
         // 這裡可以導向詳細問卷介面，或動態載入 data.detailQuestions
     }
-    function switchToDetailMode(dimension, questions = null) {
-    // 如果沒傳入 questions，就從全域變數拿
-    const qSource = questions || ALL_DETAIL_QUESTIONS;
-    
-    // 💥 修正點：資料現在是物件，不能用 q[2]，要用 q.dimension
-    // 同時確保這裡的屬性名與您的 TiDB 欄位名一致 (例如 row.dimension)
-    const filtered = qSource.filter(q => q.dimension === dimension);
-    
-    if (filtered.length === 0) {
-        console.error("篩選失敗，原始資料：", qSource);
-        return alert("找不到「" + dimension + "」的題目，請檢查資料庫欄位名稱。");
-    }
-
+    async function switchToDetailMode(dimensionName) {
+    // 1. 隱藏結果，顯示載入中
     document.getElementById('resultContainer').style.display = 'none';
-    document.getElementById('quizForm').style.display = 'block';
+    document.getElementById('loadingQuestions').style.display = 'block';
+    document.getElementById('loadingQuestions').innerText = `正在為您準備「${dimensionName}」的深度評量題目...`;
 
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = false; 
-    btn.innerText = `送出 ${dimension} 詳細評量`;
-    
-    btn.onclick = () => handleFinalSubmit(dimension);
-    renderQuestions(filtered); // 重新渲染篩選後的題目
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+        // 2. 💥 直接向您的 TiDB API 請求資料 (這是最穩當的做法)
+        // 使用您在 api/questions.js 設定的參數 type=Detail 和 dim
+        const url = `/api/questions?type=Detail&dim=${encodeURIComponent(dimensionName)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error("無法從資料庫取得題目");
+        
+        const detailQuestions = await response.json();
+
+        // 3. 檢查是否有抓到題目
+        if (!detailQuestions || detailQuestions.length === 0) {
+            throw new Error(`資料庫中找不到分類為「${dimensionName}」的詳細題目。`);
+        }
+
+        // 4. 切換顯示介面
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('quizForm').style.display = 'block';
+
+        // 5. 更新送出按鈕的行為
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = false; 
+        btn.innerText = `送出 ${dimensionName} 詳細評量`;
+        
+        // 點擊後執行 handleFinalSubmit 並傳入當前維度
+        btn.onclick = () => handleFinalSubmit(dimensionName);
+
+        // 6. 渲染題目 (這裡會用到您寫好的 row.questiontext 邏輯)
+        renderQuestions(detailQuestions);
+        
+        // 捲動回頂部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        alert("載入失敗：" + e.message);
+        // 如果失敗，把結果畫面顯示回來
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('resultContainer').style.display = 'block';
+    }
 }
     function updateDetailButtons() {
     const detailSection = document.getElementById('detailSection');
