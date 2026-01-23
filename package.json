@@ -1,3 +1,4 @@
+npm install mysql2
 {
   "name": "psychological-assessment-trial",
   "version": "1.0.0",
