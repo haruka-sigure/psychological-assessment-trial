@@ -29,7 +29,7 @@ export default async function handler(req, res) {
             params.push(dim);
         }
 
-        sql += ' ORDER BY id ASC';
+        sql += ' ORDER BY qid ASC';
 
         const [rows] = await connection.execute(sql, params);
         res.status(200).json(rows);
