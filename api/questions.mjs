@@ -7,7 +7,10 @@ export default async function handler(req, res) {
     password: process.env.TIDB_PASSWORD,
     database: process.env.TIDB_DB,
     port: process.env.TIDB_PORT,
-    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true }
+    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true 
+         rejectUnauthorized: true,
+    // 如果報錯，嘗試移除 rejectUnauthorized 或使用特定 CA
+    }
   });
 
   try {
