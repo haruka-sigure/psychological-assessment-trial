@@ -1,9 +1,12 @@
-npm install mysql2
 {
   "name": "psychological-assessment-trial",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "mysql2": "^3.11.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
     "openai": "^4.0.0",
     "@google/generative-ai": "^0.21.0"
   }
