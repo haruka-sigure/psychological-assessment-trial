@@ -58,6 +58,8 @@ export default async function handler(req, res) {
             const match = criteria.find(c => 
                 c.dimension === dim && totalScore >= c.minscore && totalScore <= c.maxscore
             );
+            // 💥 修正：找出該維度的「绝对最大值」而不是「區間上限」
+            const absoluteMax = Math.max(...criteria.filter(c => c.dimension === dim).map(c => c.maxscore));
 
             finalResults.push({
                 dimension: dim,
