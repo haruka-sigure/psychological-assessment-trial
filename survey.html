@@ -123,8 +123,10 @@
         targetBody.innerHTML = ''; // 清空載入中文字
     
         questions.forEach((row) => {
-            const qId = row[0];       // 第一欄：QID (e.g., Q1)
-            const qText = row[1];     // 第二欄：題目內容
+            // 修改前：const qText = row[1];
+            // 修改後（配合 SQL 欄位名）：
+            const qText = row.question_text;
+            const qId = row.id;
             
             // 建立一行表格
             const tr = document.createElement('tr');
