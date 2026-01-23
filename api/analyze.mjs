@@ -81,6 +81,8 @@ export default async function handler(req, res) {
             });
         }
 
+        let systemPrompt = "";
+        let userPrompt = "";
     if (inputData.assessmentType === 'detail') {
       // 深度評量的專屬 AI 建議
       systemPrompt = `你是一位資深的心理諮商專家，現在正在進行「${inputData.dimension}」的深度分析。請針對該維度的高低分給出具体的、專業的心理建設建議。`;
