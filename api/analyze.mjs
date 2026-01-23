@@ -65,7 +65,7 @@ export default async function handler(req, res) {
                 dimension: dim,
                 score: totalScore,
                 evaluation: match ? match.evaluation : "未知",
-                maxScore: match ? match.maxscore : 20 // 根據資料庫設定或給預設
+                maxScore: absoluteMax // 使用該維度的最高分 (例如 24)
             });
         } else {
             // 主問卷：處理所有出現在題目中的維度
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
                     dimension: dim,
                     score: score,
                     evaluation: match ? match.evaluation : "未知",
-                    maxScore: match ? match.maxscore : 12
+                    maxScore: absoluteMax 
                 };
             });
         }
