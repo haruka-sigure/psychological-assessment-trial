@@ -125,8 +125,8 @@
         questions.forEach((row) => {
             // 修改前：const qText = row[1];
             // 修改後（配合 SQL 欄位名）：
-            const qText = row.question_text;
-            const qId = row.id;
+            const qText = row.questiontext;
+            const qId = row.qid;
             
             // 建立一行表格
             const tr = document.createElement('tr');
