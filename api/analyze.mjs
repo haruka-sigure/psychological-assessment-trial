@@ -121,17 +121,34 @@ export default async function handler(req, res) {
 
         const aiAnalysis = completion.choices[0].message.content;
 
-        // 6. 寫入 assessment_logs (存檔)
-        await connection.execute(
-            'INSERT INTO assessment_logs (assessment_type, dimension, total_score, evaluation, ai_advice) VALUES (?, ?, ?, ?, ?)',
-            [
-                currentSub, 
-                isDetail ? inputData.dimension : 'All', 
-                isDetail ? finalResults[0].score : 0, 
-                isDetail ? finalResults[0].evaluation : 'N/A', 
-                aiAnalysis
-            ]
-        );
+        // 💥 新增：準備存入資料庫的分數文字
+        let logScoreDisplay = "";
+        if (isDetail) {
+            // 詳細問卷：直接存數字字串
+            logScoreDisplay = finalResults[0].score.toString();
+        } else {
+            // 主問卷：彙整成「類別: 分數」格式，方便直接檢視
+            // 範例結果：憂鬱: 5, 焦慮: 3, 思覺失調: 2 ...
+            logScoreDisplay = finalResults
+                .map(r => `${r.dimension}: ${r.score}`)
+                .join(', ');
+        }
+        
+        // 6. 寫入 assessment_logs
+        try {
+            await connection.execute(
+                'INSERT INTO assessment_logs (assessment_type, dimension, total_score, evaluation, ai_advice) VALUES (?, ?, ?, ?, ?)',
+                [
+                    currentSub, 
+                    isDetail ? inputData.dimension : 'All', 
+                    logScoreDisplay, // 💥 這裡存入剛才格式化好的文字
+                    isDetail ? finalResults[0].evaluation : 'Multi', // 主問卷存 Multi 或綜合評價
+                    aiAnalysis
+                ]
+            );
+        } catch (dbErr) {
+            console.error("資料庫紀錄失敗:", dbErr);
+        }
 
         // 7. 回傳結果 (確保包含 buttons)
         res.status(200).json({
