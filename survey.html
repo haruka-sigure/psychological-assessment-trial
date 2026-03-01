@@ -67,6 +67,9 @@
     <div id="resultContainer" style="display:none;">
         <h3>📊 測驗評估報告</h3>
         <div id="scoreList"></div> <hr>
+        <div style="max-width: 400px; margin: 20px auto;">
+        <canvas id="scoreRadarChart"></canvas>
+        </div>
         <div id="aiAdviceBox" style="background:#fdf2d9; padding:15px; border-radius:10px; margin:15px 0;">
             <h4 style="color:#8a4af3; margin-top:0;">💡 暖心導師的建議</h4>
             <p id="aiContent" style="line-height:1.6;"></p>
@@ -81,6 +84,7 @@
 </div>
 
 <script>
+    let radarChartInstance = null; // 用於存放圖表物件
     // 儲存狀態與資料
     let CURRENT_MAIN_SCORES = {};
     let ALL_DETAIL_QUESTIONS = []; // 暫存所有詳細題目
@@ -219,6 +223,15 @@
 
     // 2. 渲染分數 (來自 GAS 的 results)
     scoreList.innerHTML = '';
+    // 1. 準備圖表數據
+    const labels = data.scores.map(s => s.dimension);
+    const scores = data.scores.map(s => s.score);
+    // 取得平均滿分（通常是 12，也可以動態抓取）
+    const maxScore = data.scores[0]?.maxScore || 12;
+
+    // 2. 渲染雷達圖
+    renderRadarChart(labels, scores, maxScore);
+    
     data.scores.forEach(s => {
         CURRENT_MAIN_SCORES[s.dimension] = s.score;
     });
@@ -270,6 +283,43 @@
 
     // 5. 自動捲動到結果區，優化使用者體驗
     resultContainer.scrollIntoView({ behavior: 'smooth' });
+}
+    // 💥 新增：獨立的繪圖函式
+function renderRadarChart(labels, scores, maxScore) {
+    const ctx = document.getElementById('scoreRadarChart').getContext('2d');
+
+    // 如果已經有圖表，先銷毀它，避免游標懸停時出現舊數據
+    if (radarChartInstance) {
+        radarChartInstance.destroy();
+    }
+
+    radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '心理狀態分佈',
+                data: scores,
+                backgroundColor: 'rgba(126, 244, 173, 0.2)', // var(--primary) 透明版
+                borderColor: 'rgba(126, 244, 173, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: '#8a4af3', // var(--accent)
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: maxScore,
+                    ticks: { stepSize: 2 }
+                }
+            },
+            plugins: {
+                legend: { display: false } // 隱藏標籤，讓畫面簡潔
+            }
+        }
+    });
 }
     function renderDetailResults(data) {
     const resultContainer = document.getElementById('resultContainer');
