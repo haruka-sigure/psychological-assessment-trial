@@ -7,7 +7,20 @@ const openai = new OpenAI({
     baseURL: "https://api.groq.com/openai/v1",
 });
 
-export default async function handler(req, res) {
+// 💥 修改點 1: 使用 onRequest 封裝，並命名為 analyze
+export const analyze = onRequest({ cors: true }, async (req, res) => {
+    
+    // 💥 修改點 2: 手動處理 CORS (雙重保險)
+    res.set('Access-Control-Allow-Origin', '*'); // 允許所有來源
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // 允許的動法
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // 允許的標頭
+
+    // 💥 修改點 3: 處理瀏覽器的預檢請求 (OPTIONS)
+    if (req.method === 'OPTIONS') {
+        res.status(204).send(''); // 預檢成功，直接回傳
+        return;
+    }
+    
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     const { inputData } = req.body;
