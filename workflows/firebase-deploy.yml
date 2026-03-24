@@ -17,6 +17,6 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_YOUR_PROJECT }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_Firebase app }}'
           channelId: live
-          projectId: 1:899032695696:web:0808a2a1c743c5f01f6915 # 💥 換成你的 Firebase Project ID
+          projectId: studio-6400421407-13967 # 💥 換成你的 Firebase Project ID
