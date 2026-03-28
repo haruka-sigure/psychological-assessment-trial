@@ -1,0 +1,10 @@
+{
+  "name": "gcp-analyze",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "openai": "^4.0.0",
+    "mysql2": "^3.0.0"
+  }
+}

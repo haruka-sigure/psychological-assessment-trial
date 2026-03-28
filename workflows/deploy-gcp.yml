@@ -1,0 +1,38 @@
+name: Deploy to GCP Cloud Functions
+
+on:
+  push:
+    branches:
+      - gcp-migration # 只有推送到這個分支才會觸發
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 1. 認證 GCP (需先在 GitHub 設定 Secrets)
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    # 2. 部署到 Cloud Functions
+    - id: 'deploy'
+      uses: 'google-github-actions/deploy-cloud-functions@v2'
+      with:
+        name: 'analyze-function' # GCP 上的函式名稱
+        runtime: 'nodejs20'      # 使用的環境
+        region: 'asia-east1'     # 台灣機房
+        source_dir: './gcp-functions' # 💥 這是關鍵：指定 GCP 代碼的路徑
+        entry_point: 'analyze'   # 程式碼裡面 export 的函式名稱
+        https_trigger_security_level: 'secure_always'
+        env_vars: |
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          TIDB_HOST=${{ secrets.TIDB_HOST }}
+          TIDB_USER=${{ secrets.TIDB_USER }}
+          TIDB_PASSWORD=${{ secrets.TIDB_PASSWORD }}
+          TIDB_DB=${{ secrets.TIDB_DB }}
+          TIDB_PORT=${{ secrets.TIDB_PORT }}

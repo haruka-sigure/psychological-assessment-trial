@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>心理健康深度評量</title>
+    <style>
+        :root { --primary: #7ef4ad; --bg: #e0f7fa; --card: #ffffff; --accent: #8a4af3; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .card { background: var(--card); padding: 30px; border-radius: 20px; max-width: 600px; margin: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        
+        /* 表單樣式 */
+        textarea { width: 100%; height: 120px; margin: 15px 0; border-radius: 12px; border: 2px solid #eee; padding: 15px; font-size: 1rem; transition: 0.3s; }
+        textarea:focus { border-color: var(--primary); outline: none; }
+        
+        /* 按鈕樣式 */
+        .btn-main { background: var(--primary); border: none; padding: 15px 40px; border-radius: 30px; cursor: pointer; font-size: 1.1rem; font-weight: bold; width: 100%; }
+        .btn-detail { background: white; border: 2px solid var(--accent); color: var(--accent); padding: 10px 20px; border-radius: 10px; margin: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-detail:hover { background: var(--accent); color: white; }
+
+        /* 結果區塊 */
+        .result-container { margin-top: 25px; display: none; text-align: left; }
+        .score-item { background: #f0f0f0; padding: 10px 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .ai-report { background: #fdf2d9; padding: 20px; border-radius: 15px; border-left: 5px solid #fbc02d; margin-top: 20px; white-space: pre-wrap; }
+        .detail-section { margin-top: 25px; padding-top: 20px; border-top: 1px dashed #ccc; }
+        /* 已完成按鈕的樣式 */
+        .btn-detail.done {
+            background: #e0e0e0;
+            border-color: #bbb;
+            color: #888;
+        }
+
+        .loading { display: none; margin: 20px 0; color: #666; }
+        .bar-track { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.8s ease-in-out; }
+        .bar-fill.high { background: #ff4d4d; }
+        .bar-fill.medium { background: #ffa500; }
+        .bar-fill.low { background: #2ecc71; }
+        .high { color: #ff4d4d; font-weight: bold; }
+        .medium { color: #ffa500; font-weight: bold; }
+        .low { color: #2ecc71; font-weight: bold; }
+        .score-item-v2 { margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="surveyCard">
+    <div id="loadingQuestions">載入題目中，請稍候...</div>
+    <form id="quizForm" style="display:none;">
+    <table id="questionTable">
+        <thead>
+            <tr>
+                <th>題目</th>
+                <th>從不</th>
+                <th>很少</th>
+                <th>有時</th>
+                <th>時常</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+    <button type="button" id="submitBtn" onclick="handleFinalSubmit()">送出評估</button>
+</form>
+
+    <div id="resultContainer" style="display:none;">
+        <h3>📊 測驗評估報告</h3>
+        <div id="scoreList"></div> <hr>
+        <div style="max-width: 400px; margin: 20px auto;">
+        <canvas id="scoreRadarChart"></canvas>
+        </div>
+        <div id="aiAdviceBox" style="background:#fdf2d9; padding:15px; border-radius:10px; margin:15px 0;">
+            <h4 style="color:#8a4af3; margin-top:0;">💡 暖心導師的建議</h4>
+            <p id="aiContent" style="line-height:1.6;"></p>
+        </div>
+        <hr>
+
+        <div id="detailSection" style="display:none;">
+            <p><strong>建議進一步了解：</strong></p>
+            <div id="detailButtons"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 替換成你實際從 GCP 取得的 URL
+    const API_BASE_URL = "https://asia-east1-psychological-assessment-trial.cloudfunctions.net/analyze";
+    let radarChartInstance = null; // 用於存放圖表物件
+    // 儲存狀態與資料
+    let CURRENT_MAIN_SCORES = {};
+    let ALL_DETAIL_QUESTIONS = []; // 暫存所有詳細題目
+    let ALL_AVAILABLE_BUTTONS = []; // 暫存所有可用的按鈕清單
+    let COMPLETED_DIMENSIONS = {};  // 紀錄已完成的維度，格式如：{ "憂鬱": true }
+    // 1. 頁面載入時，先去 GAS 抓題目
+    // survey.html 內的 script 部分
+    window.onload = async () => {
+    const loadingDiv = document.getElementById('loadingQuestions');
+    try {
+        // 💡 只抓取主問卷題目
+        const response = await fetch('/api/questions?type=Main'); 
+        
+        if (!response.ok) throw new Error("API 回傳失敗");
+        const questions = await response.json();
+        
+        renderQuestions(questions);
+    } catch (e) {
+        loadingDiv.innerHTML = `<p style="color:red;">載入失敗：${e.message}</p>`;
+    }
+};
+    /**
+     * 將從 GAS 抓回來的題目資料轉換成 HTML 表格
+     * @param {Array} questions - 格式為 [[QID, 題目, 維度, 分類, 標記], ...]
+     */
+    function renderQuestions(questions) {
+        const tableBody = document.querySelector('#questionTable tbody');
+        if (!tableBody) {
+            // 如果 HTML 裡沒有 tbody，就抓 table 本身
+            const table = document.getElementById('questionTable');
+            table.innerHTML = '<tbody></tbody>';
+        }
+        
+        const targetBody = document.querySelector('#questionTable tbody');
+        targetBody.innerHTML = ''; // 清空載入中文字
+    
+        questions.forEach((row) => {
+            // 修改前：const qText = row[1];
+            // 修改後（配合 SQL 欄位名）：
+            const qText = row.questiontext;
+            const qId = row.qid;
+            
+            // 建立一行表格
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="question-text">${qText}</td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="0" required><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="1"><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="2"><span class="custom-radio"></span></label></td>
+                <td class="radio-cell"><label><input type="radio" name="${qId}" value="3"><span class="custom-radio"></span></label></td>
+            `;
+            targetBody.appendChild(tr);
+        });
+    
+        // 顯示表單，隱藏載入提示
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('quizForm').style.display = 'block';
+    }
+
+    // 2. 送出給 Vercel API 進行分析
+    async function handleFinalSubmit(dimension = null) {
+    const btn = document.getElementById('submitBtn');
+    const form = document.getElementById('quizForm');
+
+    if (btn.disabled) return; // 如果按鈕已經禁用，就不執行
+
+    btn.disabled = true; // 立刻禁用
+    btn.innerText = "分析生成中，請稍候...";
+        
+    // 1. 收集答案
+    const formData = new FormData(form);
+    const answers = {};
+    if (dimension) {
+        answers.assessmentType = 'detail';
+        answers.dimension = dimension;
+        // 💥 將主評量分數傳回去給 GAS
+        answers.mainScore = CURRENT_MAIN_SCORES[dimension] || 0;
+    }
+    formData.forEach((value, key) => {
+        answers[key] = parseInt(value);
+    });
+
+    // 檢查是否所有題目都填了 (假設有 questionCount 個題目)
+    // 如果沒填完可以提醒，這裡先略過
+
+    // 2. 顯示處理中狀態
+    btn.disabled = true;
+    btn.innerText = "AI 分析報告生成中...";
+
+    try {
+        // 3. 呼叫你的 Vercel Analyze API
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inputData: answers })
+        });
+
+        const result = await response.json();
+
+        // 💥 修正後的判斷邏輯：
+        // 只要狀態包含 'success' 字眼都視為成功
+        if (result.status === 'success' || result.status === 'detail_success') {
+            
+            document.getElementById('quizForm').style.display = 'none';
+
+            if (result.status === 'detail_success') {
+                // 如果是詳細評量，我們執行專門顯示詳細結果的函式
+                renderDetailResults(result); 
+            } else {
+                // 如果是主問卷，執行原本的渲染函式
+                renderResults(result);
+            }
+            
+        } else {
+            throw new Error(result.message || "伺服器回傳未知錯誤");
+        }
+    } catch (e) {
+        alert("分析失敗：" + e.message);
+        btn.disabled = false;
+        btn.innerText = "重新送出評估";
+    }
+}
+
+
+    
+    function renderResults(data) {
+    const resultContainer = document.getElementById('resultContainer');
+    const scoreList = document.getElementById('scoreList');
+    const aiAdviceBox = document.getElementById('aiAdviceBox');
+    const aiContent = document.getElementById('aiContent');
+    const detailSection = document.getElementById('detailSection');
+    const detailButtons = document.getElementById('detailButtons');
+
+    // 1. 顯示容器
+    resultContainer.style.display = "block";
+
+    // 2. 渲染分數 (來自 GAS 的 results)
+    scoreList.innerHTML = '';
+    // 1. 準備圖表數據
+    const labels = data.scores.map(s => s.dimension);
+    const scores = data.scores.map(s => s.score);
+    // 取得平均滿分（通常是 12，也可以動態抓取）
+    const maxScore = data.scores[0]?.maxScore || 12;
+
+    // 2. 渲染雷達圖
+    renderRadarChart(labels, scores, maxScore);
+    
+    data.scores.forEach(s => {
+        CURRENT_MAIN_SCORES[s.dimension] = s.score;
+    });
+    data.scores.forEach(item => {
+        // 判斷顏色
+        let statusClass = item.evaluation.includes('高') ? 'high' : (item.evaluation.includes('中') ? 'medium' : 'low');
+        let percentage = Math.min((item.score / (item.maxScore || 12)) * 100, 100);
+
+        const div = document.createElement('div');
+        div.className = 'score-item-v2'; // 使用新的樣式類
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold;">${item.dimension}</span>
+                <span class="${statusClass}">${item.evaluation}</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            </div>
+            <div style="text-align: right; font-size: 0.8em; color: #888;">${item.score} / ${item.maxScore || 12}</div>
+        `;
+        scoreList.appendChild(div);
+    });
+    // 💥 關鍵修改：將詳細評量資料存入全域變數
+    ALL_DETAIL_QUESTIONS = data.detailQuestions || [];
+    ALL_AVAILABLE_BUTTONS = data.buttons || [];
+
+    // 渲染按鈕
+    updateDetailButtons();
+
+    aiContent.innerText = data.aiAnalysis;
+    resultContainer.style.display = "block";
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+        
+    // 4. 渲染詳細評量按鈕
+    detailButtons.innerHTML = '';
+    if (data.buttons && data.buttons.length > 0) {
+        detailSection.style.display = "block";
+        data.buttons.forEach(btnInfo => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-detail';
+            btn.innerText = btnInfo.label;
+            // 這裡可以呼叫詳細問卷的邏輯
+            btn.onclick = () => switchToDetailMode(btnInfo.dimension);
+            detailButtons.appendChild(btn);
+        });
+    } else {
+        detailSection.style.display = "none";
+    }
+
+    // 5. 自動捲動到結果區，優化使用者體驗
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+}
+    // 💥 新增：獨立的繪圖函式
+function renderRadarChart(labels, scores, maxScore) {
+    const ctx = document.getElementById('scoreRadarChart').getContext('2d');
+
+    // 如果已經有圖表，先銷毀它，避免游標懸停時出現舊數據
+    if (radarChartInstance) {
+        radarChartInstance.destroy();
+    }
+
+    radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '心理狀態分佈',
+                data: scores,
+                backgroundColor: 'rgba(126, 244, 173, 0.2)', // var(--primary) 透明版
+                borderColor: 'rgba(126, 244, 173, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: '#8a4af3', // var(--accent)
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0,
+                    suggestedMax: maxScore,
+                    ticks: { stepSize: 2 }
+                }
+            },
+            plugins: {
+                legend: { display: false } // 隱藏標籤，讓畫面簡潔
+            }
+        }
+    });
+}
+    function renderDetailResults(data) {
+    const resultContainer = document.getElementById('resultContainer');
+    const scoreList = document.getElementById('scoreList');
+    const aiAdviceBox = document.getElementById('aiAdviceBox');
+    const aiContent = document.getElementById('aiContent');
+
+    // 💥 標記此維度已完成
+    if (data.dimension) {
+        COMPLETED_DIMENSIONS[data.dimension] = true;
+    }
+    
+    // 渲染深度分析的長條圖
+    let statusClass = data.evaluation.includes('高') ? 'high' : (data.evaluation.includes('中') ? 'medium' : 'low');
+    let percentage = Math.min((data.totalScore / data.maxScore) * 100, 100);
+
+    scoreList.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h4 style="margin: 0; color: #8a4af3;">🎯 ${data.dimension} 深度分析報告</h4>
+        </div>
+        <div class="score-item-v2">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong>加總最終得分</strong>
+                <span class="${statusClass}">${data.evaluation}</span>
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            </div>
+            <div style="text-align: right; font-size: 0.8em; color: #888;">${data.totalScore} / ${data.maxScore} (含初步篩檢)</div>
+        </div>
+    `;
+
+    aiContent.innerText = data.aiAnalysis; // 顯示深度建議
+    document.getElementById('resultContainer').style.display = "block";
+    // 💥 修改點：更新並顯示詳細評量按鈕區塊，不要隱藏
+    updateDetailButtons();
+    detailSection.style.display = "block"; 
+
+    resultContainer.scrollIntoView({ behavior: 'smooth' });
+
+}
+
+    function startDetailSurvey(dimension) {
+        alert("即將開始「" + dimension + "」的深度評量，請稍候...");
+        // 這裡可以導向詳細問卷介面，或動態載入 data.detailQuestions
+    }
+    async function switchToDetailMode(dimensionName) {
+    // 1. 隱藏結果，顯示載入中
+    document.getElementById('resultContainer').style.display = 'none';
+    document.getElementById('loadingQuestions').style.display = 'block';
+    document.getElementById('loadingQuestions').innerText = `正在為您準備「${dimensionName}」的深度評量題目...`;
+
+    try {
+        // 2. 💥 直接向您的 TiDB API 請求資料 (這是最穩當的做法)
+        // 使用您在 api/questions.js 設定的參數 type=Detail 和 dim
+        const url = `/api/questions?type=Detail&dim=${encodeURIComponent(dimensionName)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error("無法從資料庫取得題目");
+        
+        const detailQuestions = await response.json();
+
+        // 3. 檢查是否有抓到題目
+        if (!detailQuestions || detailQuestions.length === 0) {
+            throw new Error(`資料庫中找不到分類為「${dimensionName}」的詳細題目。`);
+        }
+
+        // 4. 切換顯示介面
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('quizForm').style.display = 'block';
+
+        // 5. 更新送出按鈕的行為
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = false; 
+        btn.innerText = `送出 ${dimensionName} 詳細評量`;
+        
+        // 點擊後執行 handleFinalSubmit 並傳入當前維度
+        btn.onclick = () => handleFinalSubmit(dimensionName);
+
+        // 6. 渲染題目 (這裡會用到您寫好的 row.questiontext 邏輯)
+        renderQuestions(detailQuestions);
+        
+        // 捲動回頂部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (e) {
+        alert("載入失敗：" + e.message);
+        // 如果失敗，把結果畫面顯示回來
+        document.getElementById('loadingQuestions').style.display = 'none';
+        document.getElementById('resultContainer').style.display = 'block';
+    }
+}
+    function updateDetailButtons() {
+    const detailSection = document.getElementById('detailSection');
+    const detailButtons = document.getElementById('detailButtons');
+    detailButtons.innerHTML = '';
+
+    if (ALL_AVAILABLE_BUTTONS.length > 0) {
+        detailSection.style.display = "block";
+        
+        ALL_AVAILABLE_BUTTONS.forEach(btnInfo => {
+            const btn = document.createElement('button');
+            const isDone = COMPLETED_DIMENSIONS[btnInfo.dimension];
+
+            // 判斷是否已完成
+            if (isDone) {
+                btn.className = 'btn-detail done'; // 加入已完成樣式
+                btn.innerText = `✓ ${btnInfo.label} (已完成)`;
+                btn.disabled = true; // 禁用按鈕，防止重複作答
+                btn.style.opacity = "0.6";
+                btn.style.cursor = "default";
+            } else {
+                btn.className = 'btn-detail';
+                btn.innerText = btnInfo.label;
+                btn.onclick = () => switchToDetailMode(btnInfo.dimension, ALL_DETAIL_QUESTIONS);
+            }
+            detailButtons.appendChild(btn);
+        });
+    }
+}
+</script>
+
+</body>
+</html>
