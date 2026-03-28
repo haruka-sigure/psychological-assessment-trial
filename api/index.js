@@ -2,7 +2,13 @@ const functions = require('@google-cloud/functions-framework');
 const cors = require('cors')({ origin: true });
 
 // 這裡是關鍵：加上 try-catch 確保引入檔案時出錯能顯示在日誌裡
-let questionsHandler, analyzeHandler;
+// 在 index.js 裡修改引入方式
+let questionsHandlerRaw = require('./questions');
+let analyzeHandlerRaw = require('./analyze');
+
+// 如果抓到的是物件且裡面有 default，就取用 default
+const questionsHandler = questionsHandlerRaw.default || questionsHandlerRaw;
+const analyzeHandler = analyzeHandlerRaw.default || analyzeHandlerRaw;
 try {
     questionsHandler = require('./questions'); 
     analyzeHandler = require('./analyze');
