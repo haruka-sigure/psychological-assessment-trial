@@ -3,7 +3,7 @@ name: Deploy to GCP Cloud Functions
 on:
   push:
     branches:
-      - gcp-migration # 只有推送到這個分支才會觸發
+      - main # 只有推送到這個分支才會觸發
 
 jobs:
   deploy:
