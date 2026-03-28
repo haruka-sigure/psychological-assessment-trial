@@ -98,7 +98,7 @@
     const loadingDiv = document.getElementById('loadingQuestions');
     try {
         // 💡 只抓取主問卷題目
-        const response = await fetch(' https://asia-east1-studio-6400421407-13967.cloudfunctions.net/psychological-api/questions?type=Main'); 
+        const response = await fetch('https://asia-east1-studio-6400421407-13967.cloudfunctions.net/psychological-api/questions?type=Main'); 
         
         if (!response.ok) throw new Error("API 回傳失敗");
         const questions = await response.json();
