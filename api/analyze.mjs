@@ -1,8 +1,8 @@
 const OpenAI = require("openai");
+const mysql = require('mysql2/promise');
 
 module.exports = async function handler(req, res) {
     // GCP Functions 建議手動處理簡單的 Method 過濾
-　　const mysql = require('mysql2/promise');
     if (req.method !== 'POST') {
         return res.status(405).send('Method Not Allowed');
     }
