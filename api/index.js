@@ -1,18 +1,21 @@
 const functions = require('@google-cloud/functions-framework');
 const cors = require('cors')({ origin: true });
 
-// 這裡是關鍵：加上 try-catch 確保引入檔案時出錯能顯示在日誌裡
-// 在 index.js 裡修改引入方式
-let questionsHandlerRaw = require('./questions');
-let analyzeHandlerRaw = require('./analyze');
+// 定義變數
+let questionsHandler, analyzeHandler;
 
-// 如果抓到的是物件且裡面有 default，就取用 default
-const questionsHandler = questionsHandlerRaw.default || questionsHandlerRaw;
-const analyzeHandler = analyzeHandlerRaw.default || analyzeHandlerRaw;
 try {
-    questionsHandler = require('./questions'); 
-    analyzeHandler = require('./analyze');
+    // 引入檔案
+    const qRaw = require('./questions');
+    const aRaw = require('./analyze');
+
+    // 格式相容性處理 (同時支援 module.exports = function 和 export default)
+    questionsHandler = qRaw.default || qRaw;
+    analyzeHandler = aRaw.default || aRaw;
+
+    console.log("Handlers loaded successfully.");
 } catch (e) {
+    // 如果引入失敗，這裡會噴出詳細原因
     console.error("Critical Error: Failed to load handlers!", e);
 }
 
@@ -22,6 +25,11 @@ functions.http('mainHandler', async (req, res) => {
         console.log(`Processing request: ${req.method} ${path}`);
 
         try {
+            // 檢查 Handler 是否成功載入
+            if (!questionsHandler || !analyzeHandler) {
+                throw new Error("Handlers not initialized properly.");
+            }
+
             if (path === '/questions' || path === '/api/questions') {
                 await questionsHandler(req, res);
             } else if (path === '/analyze' || path === '/api/analyze') {
