@@ -3,8 +3,8 @@ name: Deploy Web to Firebase Hosting
 on:
   push:
     branches:
-      # - main # 當 main 分支更新時觸發
-       - gcp-migration # 如果你在測試分支，可以改成這個
+       - main # 當 main 分支更新時觸發
+      # - gcp-migration # 如果你在測試分支，可以改成這個
 
 jobs:
   deploy:
