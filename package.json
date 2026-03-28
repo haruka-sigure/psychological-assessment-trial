@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "@google-cloud/functions-framework": "^5.0.2",
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.6",
     "mysql2": "^3.11.0",
     "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
     "openai": "^4.0.0",
-    "@google/generative-ai": "^0.21.0"
+    "react": "latest",
+    "react-dom": "latest"
   }
 }

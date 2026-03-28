@@ -1,6 +1,6 @@
-import mysql from 'mysql2/promise';
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+    // 建立連線
+　　const mysql = require('mysql2/promise');
     const connection = await mysql.createConnection({
         host: process.env.TIDB_HOST,
         user: process.env.TIDB_USER,
@@ -11,13 +11,11 @@ export default async function handler(req, res) {
     });
 
     try {
-        // 1. 從網址取得篩選參數
         const { type, dim } = req.query; 
 
         let sql = 'SELECT * FROM questions';
         let params = [];
 
-        // 2. 動態構建 SQL 條件
         if (type && dim) {
             sql += ' WHERE subassessment = ? AND dimension = ?';
             params.push(type, dim);
@@ -39,4 +37,4 @@ export default async function handler(req, res) {
     } finally {
         await connection.end();
     }
-}
+};
