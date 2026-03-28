@@ -1,6 +1,6 @@
 const mysql = require('mysql2/promise');
 
-module.exports = async function handler(req, res) {
+module.exports = async function(req, res) {
     // 建立連線
     const connection = await mysql.createConnection({
         host: process.env.TIDB_HOST,
