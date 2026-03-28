@@ -1,22 +1,16 @@
-name: Deploy Web to Firebase Hosting
-
+name: Deploy to Firebase Hosting
 on:
   push:
     branches:
-       - main # 當 main 分支更新時觸發
-      # - gcp-migration # 如果你在測試分支，可以改成這個
-
+      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_Firebase_app }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STUDIO_6400421407_13967 }}'
           channelId: live
-          projectId: studio-6400421407-13967 # 💥 換成你的 Firebase Project ID
+          projectId: studio-6400421407-13967
