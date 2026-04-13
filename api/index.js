@@ -1,45 +1,40 @@
 const functions = require('@google-cloud/functions-framework');
 const cors = require('cors')({ origin: true });
 
-// 定義變數
-let questionsHandler, analyzeHandler;
-
-try {
-    // 引入檔案
-    const qRaw = require('./questions');
-    const aRaw = require('./analyze');
-
-    // 格式相容性處理 (同時支援 module.exports = function 和 export default)
-    questionsHandler = qRaw.default || qRaw;
-    analyzeHandler = aRaw.default || aRaw;
-
-    console.log("Handlers loaded successfully.");
-} catch (e) {
-    // 如果引入失敗，這裡會噴出詳細原因
-    console.error("Critical Error: Failed to load handlers!", e);
-}
+// 將引入邏輯放入 Handler 內，或者確保匯出格式正確
+const questions = require('./questions');
+const analyze = require('./analyze');
 
 functions.http('mainHandler', async (req, res) => {
+    // 1. 強制處理 CORS
     return cors(req, res, async () => {
         const path = req.path;
         console.log(`Processing request: ${req.method} ${path}`);
 
         try {
-            // 檢查 Handler 是否成功載入
-            if (!questionsHandler || !analyzeHandler) {
-                throw new Error("Handlers not initialized properly.");
-            }
-
+            // 2. 根據路徑分流，並確保呼叫的是函式
+            // 如果你的 questions.js 是 module.exports = async function...
+            // 那麼引入後的變數本身就是 function
+            
             if (path === '/questions' || path === '/api/questions') {
-                await questionsHandler(req, res);
-            } else if (path === '/analyze' || path === '/api/analyze') {
-                await analyzeHandler(req, res);
-            } else {
-                res.status(200).send('API is running. Path: ' + path);
+                const handler = questions.default || questions;
+                if (typeof handler !== 'function') throw new Error("questionsHandler is not a function");
+                await handler(req, res);
+            } 
+            else if (path === '/analyze' || path === '/api/analyze') {
+                const handler = analyze.default || analyze;
+                if (typeof handler !== 'function') throw new Error("analyzeHandler is not a function");
+                await handler(req, res);
+            } 
+            else {
+                res.status(200).send('API is running. Service: Online');
             }
         } catch (err) {
-            console.error('Runtime Error:', err);
-            res.status(500).json({ error: err.message });
+            console.error('Runtime Error:', err.stack); // 使用 .stack 可以看到更詳細的報錯行數
+            res.status(500).json({ 
+                error: "Internal Server Error",
+                message: err.message 
+            });
         }
     });
 });
