@@ -3,7 +3,7 @@ name: Deploy to GCP Cloud Functions
 on:
   push:
     branches:
-      - main # 只有推送到這個分支才會觸發
+      - main
 
 jobs:
   deploy:
@@ -13,26 +13,31 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 1. 認證 GCP (需先在 GitHub 設定 Secrets)
+    # 1. 認證 GCP (加入 project_id 確保定位準確)
     - id: 'auth'
       uses: 'google-github-actions/auth@v2'
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        project_id: '${{ secrets.GCP_PROJECT_ID }}' # 👈 務必加入這一行
 
     # 2. 部署到 Cloud Functions
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloud-functions@v2'
       with:
-        name: 'analyze-function' # GCP 上的函式名稱
-        runtime: 'nodejs20'      # 使用的環境
-        region: 'asia-east1'     # 台灣機房
-        source_dir: './gcp-functions' # 💥 這是關鍵：指定 GCP 代碼的路徑
-        entry_point: 'analyze'   # 程式碼裡面 export 的函式名稱
+        # 建議改回你截圖中顯示的名稱
+        name: 'psychological-api' 
+        runtime: 'nodejs20'
+        region: 'asia-east1'
+        # 確保你的程式碼真的放在這個資料夾下
+        source_dir: './gcp-functions' 
+        # 根據你 index.js 裡的 exports.mainHandler 修改
+        entry_point: 'mainHandler' 
         https_trigger_security_level: 'secure_always'
+        # 修正變數鍵名，與程式碼對齊
         env_vars: |
           GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
           TIDB_HOST=${{ secrets.TIDB_HOST }}
           TIDB_USER=${{ secrets.TIDB_USER }}
           TIDB_PASSWORD=${{ secrets.TIDB_PASSWORD }}
-          TIDB_DB=${{ secrets.TIDB_DB }}
+          TIDB_DB_NAME=${{ secrets.TIDB_DB }}
           TIDB_PORT=${{ secrets.TIDB_PORT }}
