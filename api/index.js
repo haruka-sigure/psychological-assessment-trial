@@ -1,7 +1,7 @@
 const functions = require('@google-cloud/functions-framework');
 const cors = require('cors')({ origin: true });
 
-// 將引入邏輯放入 Handler 內，或者確保匯出格式正確
+// 將引入邏輯放入 Handler 內，或者確保匯出格式正確 
 const questions = require('./questions');
 const analyze = require('./analyze');
 
