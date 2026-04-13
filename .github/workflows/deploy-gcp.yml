@@ -27,7 +27,7 @@ jobs:
         # 建議改回你截圖中顯示的名稱
         name: 'psychological-api' 
         runtime: 'nodejs20'
-        region: 'asia-east1'
+        region: 'us-central1'
         # 確保你的程式碼真的放在這個資料夾下
         source_dir: './gcp-functions' 
         # 根據你 index.js 裡的 exports.mainHandler 修改
