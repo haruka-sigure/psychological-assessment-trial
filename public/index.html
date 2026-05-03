@@ -1,89 +1,167 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.12.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.12.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.12.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>疾病介紹 - 響應式版本</title>
+    <style>
+        :root {
+            --primary-bg: #e0f7fa;
+            --card-bg: #fdf2d9;
+            --accent-green: #7ef4ad;
+            --text-color: #333;
+            --purple-theme: #8a4af3;
         }
-      });
-    </script>
-  </body>
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--primary-bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 { font-size: 1.4rem; margin-bottom: 30px; line-height: 1.4; }
+
+        /* --- 手機版按鈕清單 --- */
+        .mobile-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .mobile-btn {
+            background: white;
+            border: 2px solid #fff;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mobile-btn:active { transform: scale(0.98); background: #f0f0f0; }
+        .mobile-btn.active { border-color: var(--purple-theme); color: var(--purple-theme); }
+
+        /* --- 介紹內容卡片 (手機版優化) --- */
+        .info-box {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            text-align: left;
+            position: relative;
+            display: none; /* 初始隱藏 */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .info-box.show { display: block; }
+
+        .close-x {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .info-box h2 { margin-top: 0; color: var(--purple-theme); font-size: 1.2rem; }
+        .info-box p { line-height: 1.7; color: #444; margin-bottom: 0; }
+
+        /* --- 開始測驗按鈕 --- */
+        .start-btn {
+            background-color: var(--accent-green);
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 40px;
+            cursor: pointer;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>在開始之前，<br>我們來聊聊這些困擾...</h1>
+
+    <div class="mobile-list">
+        <div class="mobile-btn" onclick="selectDisease(this, 'schizo')">思覺失調症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'bipolar')">躁鬱症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'depression')">憂鬱症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'autism')">自閉症</div>
+        <div class="mobile-btn" onclick="selectDisease(this, 'anxiety')">焦慮症</div>
+    </div>
+
+    <div id="infoBox" class="info-box">
+        <span class="close-x" onclick="closeBox()">&times;</span>
+        <div id="infoDetail"></div>
+    </div>
+
+    <button class="start-btn" onclick="goToSurvey()">開始測驗</button>
+</div>
+
+<script>
+    const data = {
+        schizo: { title: "思覺失調症", content: "這是一種關於大腦訊息處理的慢性疾病，會影響一個人的思考、感覺與現實感的判斷。特徵可能包括幻覺、妄想或社交退縮，讓人感覺像活在另一個頻率。這並非「人格分裂」，透過早期篩檢與穩定治療，大腦的功能是可以被修復並重新與世界接軌的。" },
+        bipolar: { title: "躁鬱症", content: "醫學上稱為「雙相情緒障礙症」，特徵是情緒如同雲霄飛車，在極度亢奮的「躁期」與極度低落的「鬱期」之間大幅波動。躁期時可能充滿自信、體力過人；鬱期時則感到萬念俱灰。這不是單純的情緒不穩，而是情緒調節中樞的暫時失衡，需要專業引導找回生活的平衡點。" },
+        depression: { title: "憂鬱症", content: "這不只是短暫的「心情不好」，而是一場心靈的深度感冒。它會奪走一個人的活力、睡眠與對事物的興趣，讓人陷入無止盡的疲累與自責。這不是因為「抗壓性差」，而是生理、心理與環境共同作用的結果。透過科學的評估，我們能幫助您看見情緒背後的求救信號。" },
+        autism: { title: "自閉症", content: "焦慮症表現為對未來或日常瑣事產生過度、難以控制的擔憂與恐懼。這常伴隨著心悸、緊繃或無法靜下心來的生理反應，讓人感覺時刻處於警覺狀態。這種長期的精神內耗會縮小生活圈，但透過適當的練習與支持，緊繃的神經是可以學習放鬆並回歸平靜的。" },
+        anxiety: { title: "焦慮症", content: "這是一種神經發育的「多樣性」，影響著社交溝通、語言表達及行為模式。每個人的特徵就像光譜一樣各異，有人對感官極度敏感，有人則擁有獨特的專注力。這並非「壞習慣」或「故意的」，而是大腦天生的連結方式不同。理解他們的獨特性，是建立有效溝通的第一步。" }
+    };
+
+    function selectDisease(element, key) {
+        // 移除其他按鈕的啟動狀態
+        document.querySelectorAll('.mobile-btn').forEach(btn => btn.classList.remove('active'));
+        // 設定當前按鈕啟動
+        element.classList.add('active');
+
+        // 顯示內容
+        const box = document.getElementById('infoBox');
+        const detail = document.getElementById('infoDetail');
+        detail.innerHTML = `<h2>${data[key].title}</h2><p>${data[key].content}</p>`;
+        box.classList.add('show');
+
+        // 自動捲動到說明文字，優化手機體驗
+        setTimeout(() => {
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    function closeBox() {
+        document.getElementById('infoBox').classList.remove('show');
+        document.querySelectorAll('.mobile-btn').forEach(btn => btn.classList.remove('active'));
+    }
+function goToSurvey() {
+    const btn = document.querySelector('.start-btn');
+    btn.innerText = "測驗載入中...";
+    btn.disabled = true;
+
+    // 💥 關鍵修改：不要導向 GAS URL，而是導向 Vercel 專案內的 survey.html
+    window.location.href = "survey.html"; 
+}
+</script>
+
+</body>
 </html>
