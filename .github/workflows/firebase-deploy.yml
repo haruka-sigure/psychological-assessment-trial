@@ -16,4 +16,4 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STUDIO_6400421407_13967 }}'
           channelId: live
           projectId: studio-6400421407-13967
-	  entryPoint: .  # 確保它從根目錄開始尋找 firebase.json
+          entryPoint: .  # 確保它從根目錄開始尋找 firebase.json
