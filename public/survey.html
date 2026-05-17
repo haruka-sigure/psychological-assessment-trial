@@ -41,6 +41,16 @@
         .medium { color: #ffa500; font-weight: bold; }
         .low { color: #2ecc71; font-weight: bold; }
         .score-item-v2 { margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+	/* AI 免責聲明樣式 */
+	.ai-disclaimer {
+	    margin-top: 15px;
+	    padding-top: 10px;
+	    border-top: 1px solid rgba(0,0,0,0.1); /* 淺淺的分割線 */
+	    color: #888; /* 淺灰色 */
+	    font-size: 12px; /* 小字 */
+	    line-height: 1.5;
+	    text-align: justify;
+}
     </style>
 </head>
 <body>
@@ -73,6 +83,9 @@
         <div id="aiAdviceBox" style="background:#fdf2d9; padding:15px; border-radius:10px; margin:15px 0;">
             <h4 style="color:#8a4af3; margin-top:0;">💡 暖心導師的建議</h4>
             <p id="aiContent" style="line-height:1.6;"></p>
+	　　<div class="ai-disclaimer">
+        免責聲明：本系統之分析結果由 AI 自動生成，僅供初步自我篩檢參考，不具備臨床診斷效力。若您感到強烈心理痛苦，請立即撥打 1925 安心專線或尋求專業醫療協助。
+　　	    </div>
         </div>
         <hr>
 
